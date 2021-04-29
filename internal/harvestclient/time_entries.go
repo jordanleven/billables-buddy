@@ -22,11 +22,7 @@ type HarvestTimeEntriesResponse struct {
 	HarvestTimeEntries []HarvestTimeEntryResponse `json:"time_entries"`
 }
 
-type ScheduleStatistics interface {
-	getTotal() float64
-}
-
-type Schedule map[time.Weekday]float64
+type Schedule map[time.Time]float64
 
 type TimeEntry struct {
 	Total    float64
@@ -49,39 +45,63 @@ func getTotalHoursFromEvaluator(t HarvestTimeEntriesResponse, evaluator hoursEva
 	var hours float64 = 0.0
 	for _, entry := range t.HarvestTimeEntries {
 		if evaluator(entry) {
-			hours = hours + entry.Hours
+			hours += entry.Hours
 		}
 	}
 
 	return hours
 }
 
-func getScheduledHoursFromEvaluator(t HarvestTimeEntriesResponse, evaluator hoursEvaluator) Schedule {
+func getScheduledHoursFromEvaluator(startDate time.Time, t HarvestTimeEntriesResponse, evaluator hoursEvaluator) Schedule {
+	loc := startDate.Location()
 	schedule := Schedule{
-		time.Monday:    0.0,
-		time.Tuesday:   0.0,
-		time.Wednesday: 0.0,
-		time.Thursday:  0.0,
-		time.Friday:    0.0,
-		time.Saturday:  0.0,
-		time.Sunday:    0.0,
+		startDate.AddDate(0, 0, 0): 0.0,
+		startDate.AddDate(0, 0, 1): 0.0,
+		startDate.AddDate(0, 0, 2): 0.0,
+		startDate.AddDate(0, 0, 3): 0.0,
+		startDate.AddDate(0, 0, 4): 0.0,
+		startDate.AddDate(0, 0, 5): 0.0,
+		startDate.AddDate(0, 0, 6): 0.0,
 	}
 
 	for _, entry := range t.HarvestTimeEntries {
 		if evaluator(entry) {
-			dateP, _ := time.Parse("2006-01-02", entry.Date)
-			weekDay := dateP.Weekday()
-			schedule[weekDay] += entry.Hours
+			dateL := entry.TimeStart.In(loc)
+			dateLF := time.Date(dateL.Year(), dateL.Month(), dateL.Day(), 0, 0, 0, 0, loc)
+			schedule[dateLF] += entry.Hours
 		}
 	}
 
 	return schedule
 }
 
-func getEvaluatedHoursFromEntries(t HarvestTimeEntriesResponse, evaluator hoursEvaluator) TimeEntry {
+func getEarliestStartTimeFromEntries(ts time.Time, t HarvestTimeEntriesResponse) time.Time {
+	const timeFormat = "2006-01-02"
+	loc := ts.Location()
+	tsF := ts.Format(timeFormat)
+
+	var todayStartTime time.Time
+	for _, entry := range t.HarvestTimeEntries {
+		startTime := entry.TimeStart
+		startTimeL := startTime.In(loc)
+		startTimeLF := startTimeL.Format(timeFormat)
+
+		if startTimeLF != tsF {
+			continue
+		}
+
+		if todayStartTime.IsZero() || todayStartTime.After(startTime) {
+			todayStartTime = startTimeL
+		}
+	}
+
+	return todayStartTime
+}
+
+func getEvaluatedHoursFromEntries(startDate time.Time, t HarvestTimeEntriesResponse, evaluator hoursEvaluator) TimeEntry {
 	return TimeEntry{
 		Total:    getTotalHoursFromEvaluator(t, evaluator),
-		Schedule: getScheduledHoursFromEvaluator(t, evaluator),
+		Schedule: getScheduledHoursFromEvaluator(startDate, t, evaluator),
 	}
 }
 

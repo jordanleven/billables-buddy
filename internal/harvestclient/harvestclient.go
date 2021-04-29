@@ -16,27 +16,30 @@ type Hours struct {
 }
 
 type TrackedHours struct {
-	Hours Hours
+	Hours          Hours
+	TodayStartTime time.Time
 }
 
-func getHoursFromEntries(entries HarvestTimeEntriesResponse) Hours {
+func getHoursFromEntries(startDate time.Time, entries HarvestTimeEntriesResponse) Hours {
 	evaluatorTotal := func(e HarvestTimeEntryResponse) bool { return true }
 	evaluatorBillable := isEntryBillable
 	evaluatorNonbillable := func(e HarvestTimeEntryResponse) bool { return !isEntryBillable(e) }
 
 	return Hours{
-		HoursAll:         getEvaluatedHoursFromEntries(entries, evaluatorTotal),
-		HoursBillable:    getEvaluatedHoursFromEntries(entries, evaluatorBillable),
-		HoursNonbillable: getEvaluatedHoursFromEntries(entries, evaluatorNonbillable),
+		HoursAll:         getEvaluatedHoursFromEntries(startDate, entries, evaluatorTotal),
+		HoursBillable:    getEvaluatedHoursFromEntries(startDate, entries, evaluatorBillable),
+		HoursNonbillable: getEvaluatedHoursFromEntries(startDate, entries, evaluatorNonbillable),
 	}
 }
 
 func (c HarvestClient) GetTrackedHoursBetweenDates(startDate time.Time, endDate time.Time) TrackedHours {
+	ts := time.Now().Local()
 	userID := c.getCurrentUserID()
 	entries := c.getHarvestTimeEntries(userID, startDate, endDate)
 
 	return TrackedHours{
-		Hours: getHoursFromEntries(entries),
+		Hours:          getHoursFromEntries(startDate, entries),
+		TodayStartTime: getEarliestStartTimeFromEntries(ts, entries),
 	}
 }
 

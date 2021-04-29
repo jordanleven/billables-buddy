@@ -3,8 +3,6 @@ package harvestclient
 import (
 	"testing"
 	"time"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func TestGetFormattedHarvestAPIDate(t *testing.T) {
@@ -81,48 +79,50 @@ func TestGetTotalHoursFromEvaluator(t *testing.T) {
 }
 
 func TestGetScheduledHoursFromEvaluator(t *testing.T) {
+	startTime := time.Date(1984, 01, 23, 0, 0, 0, 0, time.Local)
 	evaluator := func(t HarvestTimeEntryResponse) bool {
 		return t.Billable
 	}
 	args := HarvestTimeEntriesResponse{
 		HarvestTimeEntries: []HarvestTimeEntryResponse{
 			{
-				Billable: false,
-				Hours:    1.0,
-				Date:     "1984-01-24",
+				Billable:  false,
+				Hours:     1.0,
+				TimeStart: time.Date(1984, 01, 24, 6, 29, 0, 0, time.UTC),
 			},
 			{
-				Billable: true,
-				Hours:    2.5,
-				Date:     "1984-01-24",
+				Billable:  true,
+				Hours:     2.5,
+				TimeStart: time.Date(1984, 01, 24, 6, 29, 0, 0, time.UTC),
 			},
 			{
-				Billable: true,
-				Hours:    3.5,
-				Date:     "1984-01-24",
+				Billable:  true,
+				Hours:     3.5,
+				TimeStart: time.Date(1984, 01, 24, 6, 29, 0, 0, time.UTC),
 			},
 			{
-				Billable: true,
-				Hours:    1.2,
-				Date:     "1984-01-25",
+				Billable:  true,
+				Hours:     1.2,
+				TimeStart: time.Date(1984, 01, 25, 6, 29, 0, 0, time.UTC),
 			},
 		},
 	}
 
-	actualSchedule := getScheduledHoursFromEvaluator(args, evaluator)
+	actualSchedule := getScheduledHoursFromEvaluator(startTime, args, evaluator)
 	expectedSchedule := Schedule{
-		time.Monday:    0.0,
-		time.Tuesday:   6,
-		time.Wednesday: 1.2,
-		time.Thursday:  0.0,
-		time.Friday:    0.0,
-		time.Saturday:  0.0,
-		time.Sunday:    0.0,
+		startTime.AddDate(0, 0, 0): 0.0,
+		startTime.AddDate(0, 0, 1): 6,
+		startTime.AddDate(0, 0, 2): 1.2,
+		startTime.AddDate(0, 0, 3): 0.0,
+		startTime.AddDate(0, 0, 4): 0.0,
+		startTime.AddDate(0, 0, 5): 0.0,
+		startTime.AddDate(0, 0, 6): 0.0,
 	}
 
 	t.Run("Returns the expected schedule when no hours are on a day", func(t *testing.T) {
-		actual := actualSchedule[time.Monday]
-		expected := expectedSchedule[time.Monday]
+		monday := startTime.AddDate(0, 0, 0)
+		actual := actualSchedule[monday]
+		expected := expectedSchedule[monday]
 
 		if actual != expected {
 			t.Errorf("Received %f; want %f", actual, expected)
@@ -130,22 +130,76 @@ func TestGetScheduledHoursFromEvaluator(t *testing.T) {
 	})
 
 	t.Run("Returns the expected schedule when single entries are on a day", func(t *testing.T) {
-		actual := actualSchedule[time.Wednesday]
-		expected := expectedSchedule[time.Wednesday]
+		wednesday := startTime.AddDate(0, 0, 2)
 
-		spew.Dump(actualSchedule)
+		actual := actualSchedule[wednesday]
+		expected := expectedSchedule[wednesday]
+
 		if actual != expected {
 			t.Errorf("Received %f; want %f", actual, expected)
 		}
 	})
 
 	t.Run("Returns the expected schedule when multiple entries are on a day", func(t *testing.T) {
-		actual := actualSchedule[time.Tuesday]
-		expected := expectedSchedule[time.Tuesday]
+		wednesday := startTime.AddDate(0, 0, 3)
 
-		spew.Dump(actualSchedule)
+		actual := actualSchedule[wednesday]
+		expected := expectedSchedule[wednesday]
+
 		if actual != expected {
 			t.Errorf("Received %f; want %f", actual, expected)
+		}
+	})
+}
+
+func TestGetEarliestStartTimeFromEntries(t *testing.T) {
+	loc, _ := time.LoadLocation("EST")
+	entries := HarvestTimeEntriesResponse{
+		HarvestTimeEntries: []HarvestTimeEntryResponse{
+			{
+				TimeStart: time.Date(1984, 1, 24, 6, 35, 0, 0, time.UTC),
+			},
+			{
+				TimeStart: time.Date(1984, 1, 24, 6, 29, 0, 0, time.UTC),
+			},
+			{
+				TimeStart: time.Date(1984, 1, 24, 6, 40, 0, 0, time.UTC),
+			},
+			{
+				TimeStart: time.Date(1984, 1, 22, 6, 0, 0, 0, time.UTC),
+			},
+		},
+	}
+
+	t.Run("Returns the correct start time when providing local timezone", func(t *testing.T) {
+		ts := time.Date(1984, 1, 24, 11, 0, 0, 0, loc)
+
+		actual := getEarliestStartTimeFromEntries(ts, entries)
+		expected := time.Date(1984, 1, 24, 1, 29, 0, 0, loc)
+
+		if actual != expected {
+			t.Errorf("Received %s; want %s", actual, expected)
+		}
+	})
+
+	t.Run("Returns the correct start time when providing a single entry that matches", func(t *testing.T) {
+		ts := time.Date(1984, 1, 22, 6, 35, 0, 0, loc)
+
+		actual := getEarliestStartTimeFromEntries(ts, entries)
+		expected := time.Date(1984, 1, 22, 1, 0, 0, 0, loc)
+
+		if actual != expected {
+			t.Errorf("Received %s; want %s", actual, expected)
+		}
+	})
+
+	t.Run("Returns the correct zero start time when providing no entries that match", func(t *testing.T) {
+		ts := time.Date(1984, 1, 23, 6, 1, 0, 0, loc)
+
+		actual := getEarliestStartTimeFromEntries(ts, entries)
+
+		if !actual.IsZero() {
+			t.Errorf("Received %s; want zero", actual)
 		}
 	})
 }

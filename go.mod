@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	bou.ke/monkey v1.0.2
-	github.com/davecgh/go-spew v1.1.1
+	github.com/joefitzgerald/forecast v1.2.4
 	github.com/joho/godotenv v1.3.0
+	github.com/kyokomi/emoji/v2 v2.2.8
 )

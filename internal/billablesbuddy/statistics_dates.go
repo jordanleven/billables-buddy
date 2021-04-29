@@ -32,7 +32,7 @@ func getWeekStartDateFromDate(date time.Time) time.Time {
 func getStatisticDates() StatisticDates {
 	ts := getCurrentTimestamp()
 	startWeekDay := getWeekStartDateFromDate(ts)
-	endDate := startWeekDay.AddDate(0, 0, 7)
+	endDate := startWeekDay.AddDate(0, 0, 6)
 
 	return StatisticDates{
 		CurrentTimestamp: ts,

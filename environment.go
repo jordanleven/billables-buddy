@@ -7,14 +7,16 @@ import (
 )
 
 const (
-	EnvironmentProduction                    = "production"
-	EnvironmentDevelopment                   = "development"
-	EnvironmentConfigurationHarvestToken     = "HARVEST_ACCOUNT_TOKEN"
-	EnvironmentConfigurationHarvestAccountID = "HARVEST_ACCOUNT_ID"
+	EnvironmentProduction                     = "production"
+	EnvironmentDevelopment                    = "development"
+	EnvironmentConfigurationForecastAccountID = "FORECAST_ACCOUNT_ID"
+	EnvironmentConfigurationHarvestToken      = "HARVEST_ACCOUNT_TOKEN"
+	EnvironmentConfigurationHarvestAccountID  = "HARVEST_ACCOUNT_ID"
 )
 
 var (
 	environment         string = EnvironmentDevelopment
+	forecastAccountId   string
 	harvestAccountToken string
 	harvestAccountId    string
 )
@@ -25,6 +27,7 @@ func getEnvironmentVariable(v string) string {
 
 func loadVariablesFromEnvFile() {
 	godotenv.Load()
+	forecastAccountId = getEnvironmentVariable(EnvironmentConfigurationForecastAccountID)
 	harvestAccountToken = getEnvironmentVariable(EnvironmentConfigurationHarvestToken)
 	harvestAccountId = getEnvironmentVariable(EnvironmentConfigurationHarvestAccountID)
 }

@@ -64,7 +64,7 @@ func TestGetStatisticDates(t *testing.T) {
 		// Monday
 		WorkweekBegin: time.Date(1984, 01, 23, 0, 0, 0, 0, location),
 		// Friday
-		WorkweekEnd: time.Date(1984, 01, 30, 0, 0, 0, 0, location),
+		WorkweekEnd: time.Date(1984, 01, 29, 0, 0, 0, 0, location),
 	}
 
 	actualDates := getStatisticDates()
