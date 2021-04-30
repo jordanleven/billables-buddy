@@ -17,7 +17,7 @@ To run locally, simply run `go run .` in your command line. This will output you
 
 ## Building and deploying BitBar Plugin
 
-Run `./build` to generate your binary package. The compiled version will be output as `billablesmonitor.1m.goc` and automatically copied to the BitBar plugins directory.
+Run `./build` to generate your binary package. The compiled version will be output as `billablesbuddy.1m.goc` and automatically copied to the BitBar plugins directory.
 
 [BitBar]: https://github.com/matryer/xbar
 [Go]: https://golang.org/doc/install
