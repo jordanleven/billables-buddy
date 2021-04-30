@@ -2,7 +2,18 @@
 
 [![CI](https://github.com/jordanleven/billables-buddy/actions/workflows/ci.yml/badge.svg)](https://github.com/jordanleven/billables-buddy/actions/workflows/ci.yml)
 
-A simple project that will evaluate weekly progress towards Sparkbox billable hours to be used with [BitBar].
+Billables Buddy is the easiest way to get a consolidated look at your tracked hours. Designed to be used with [BitBar], it will automatically update your tracked hours against your forecasted schedule to calculate your progress towards your scheduled hours.
+
+![BillablesBuddyHero](/assets/BillablesBuddyHero.png)
+
+## Features
+
+Using your schedule in Forecast, and your tracked hours in Harvest, Billables Buddy has the following features:
+
+1. Displays your current status in the menu bar to tell you whether you're on track, ahead, falling behind, or over billable hours.
+1. Gives you a breakdown of your total, billable, and non-billable hours.
+1. Shows your expected hours that updated throughout the day based on your starting time.
+1. Automatically updates every five minutes to keep your data up-to-date.
 
 ## Getting Started
 
