@@ -20,7 +20,6 @@ func getDurationAbbreviationFromUnit(duration string) string {
 	case DurationUnitMinute:
 		return DurationAbbreviationMinute
 	}
-
 	return ""
 }
 
@@ -44,8 +43,9 @@ func getFormattedHour(v float64) (duration string, unit string) {
 	d := math.Abs(v)
 	u := DurationUnitHour
 	p := 2
-	if d > 0 && d < 1 {
-		d = d * 60
+	dR := getRoundedFloat(d, p)
+	if dR > 0 && dR < 1 {
+		d = dR * 60
 		u = DurationUnitMinute
 		p = 0
 	}
@@ -62,7 +62,5 @@ func getFormattedPercentageFromFloat(v float64) string {
 }
 
 func getFormattedTime(t time.Time) string {
-	tL := t.Local()
-	tF := tL.Format("3:04 PM")
-	return tF
+	return t.Format("3:04 PM")
 }
