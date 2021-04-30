@@ -16,7 +16,7 @@ loadEnvVariables() {
 
 buildBinary() {
   go build -o ./$PATH_BUILT_ARTIFACT -ldflags "
-    -X main.environment=production
+    -X main.flagEnvironment=production
     -X main.forecastAccountId=${!ENV_VARIABLE_NAME_FORECAST_ACCOUNT}
     -X main.harvestAccountId=${!ENV_VARIABLE_NAME_HARVEST_ACCOUNT}
     -X main.harvestAccountToken=${!ENV_VARIABLE_NAME_HARVEST_TOKEN}

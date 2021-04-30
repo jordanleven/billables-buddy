@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	environment         string = EnvironmentDevelopment
+	flagEnvironment     string = ""
 	forecastAccountId   string
 	harvestAccountToken string
 	harvestAccountId    string
@@ -23,6 +23,19 @@ var (
 
 func getEnvironmentVariable(v string) string {
 	return os.Getenv(v)
+}
+
+func getAppEnvironment() string {
+	env := os.Getenv("APP_ENV")
+
+	switch {
+	case env != "":
+		return env
+	case flagEnvironment != "":
+		return flagEnvironment
+	default:
+		return EnvironmentDevelopment
+	}
 }
 
 func loadVariablesFromEnvFile() {
@@ -36,7 +49,9 @@ func loadVariablesFromEnvFile() {
 }
 
 func init() {
-	if environment == EnvironmentDevelopment {
+	appEnv := getAppEnvironment()
+
+	if appEnv == EnvironmentDevelopment {
 		loadVariablesFromEnvFile()
 	}
 }
