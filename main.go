@@ -35,8 +35,7 @@ func printMenuSeperator() {
 func printMenuTitle(s bb.Status) {
 	var em string
 	switch s {
-	case bb.StatusOnTrack:
-	case bb.StatusAhead:
+	case bb.StatusOnTrack, bb.StatusAhead:
 		em = emojiStatusOk
 	case bb.StatusOver:
 		em = emojiStatusOver
