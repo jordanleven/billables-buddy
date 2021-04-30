@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"time"
 
 	bb "github.com/jordanleven/billables-buddy/internal/billablesbuddy"
 	"github.com/kyokomi/emoji/v2"
@@ -49,7 +50,21 @@ func printMenuTitle(s bb.Status) {
 
 	fmt.Println(mt)
 	fmt.Println("---")
+}
 
+func maybeShowEstimatedEndOfDay(h bb.HoursRemaining) {
+	estEOD := h.EstimatedEOD
+	if estEOD.IsZero() {
+		return
+	}
+
+	printEstimatedEndOfDay(estEOD)
+}
+
+func printEstimatedEndOfDay(estEOD time.Time) {
+	estEODF := getFormattedTime(estEOD)
+
+	fmt.Println("Est. EOD: " + estEODF + " | color=" + nonUserInterableMenuColor)
 }
 
 func printHoursStatistic(title string, hours bb.HoursStatistic) {
@@ -98,7 +113,7 @@ func printCurrentHoursProgress(isOver bool, hours bb.HoursStatistic) {
 		percentQualifier = getHoursDifferenceQualifier(hoursDiff)
 	}
 
-	fmt.Println(percentF + "% " + percentQualifier + " (" + hoursF + hoursAbbv + ") | href=" + harvestUrlWeek)
+	fmt.Println(percentF + "% " + percentQualifier + " (" + hoursF + hoursAbbv + ") | refresh=true | href=" + harvestUrlWeek)
 }
 
 func printHourStatistics(s HoursStatistics) {
@@ -110,6 +125,7 @@ func printHourStatistics(s HoursStatistics) {
 
 func printCurrentBillables(s HoursStatistics) {
 	printMenuTitle(s.Status)
+	maybeShowEstimatedEndOfDay(s.HoursRemaining)
 	maybeShowCurrentHoursProgress(s.Status, s.HoursBillable)
 	printMenuSeperator()
 	printHourStatistics(s)

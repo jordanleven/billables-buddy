@@ -12,19 +12,22 @@ type HoursStatistic struct {
 }
 
 type HoursStatistics struct {
-	Status           Status
+	Status
 	HoursAll         HoursStatistic
 	HoursBillable    HoursStatistic
 	HoursNonbillable HoursStatistic
+	HoursRemaining
 }
 
 func GetTrackedHoursStatistics(args GetHoursStatisticsArgs) HoursStatistics {
 	statDates := getStatisticDates()
 	h := getActualAndExpectedHours(args, statDates)
 	s := getCurrentStatus(h.HoursBillable.Actual, h.HoursBillable.Expected, h.HoursBillable.ExpectedTotal)
+	hr := getHoursRemaining(statDates.CurrentTimestamp, h.TodayStartTime, h.HoursBillable, h.HoursNonbillable)
 
 	return HoursStatistics{
-		Status: s,
+		Status:         s,
+		HoursRemaining: hr,
 		HoursAll: HoursStatistic{
 			HoursActual:   h.HoursAll.Actual,
 			HoursExpected: h.HoursAll.Expected,

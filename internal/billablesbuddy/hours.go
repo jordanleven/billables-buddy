@@ -12,16 +12,19 @@ const (
 	workdayBreakDurationInHours   = 1
 )
 
+type Schedule = fc.Schedule
 type Hour struct {
-	Actual        float64
-	Expected      float64
-	ExpectedTotal float64
+	Actual           float64
+	Expected         float64
+	ExpectedSchedule Schedule
+	ExpectedTotal    float64
 }
 
 type Hours struct {
 	HoursAll         Hour
 	HoursBillable    Hour
 	HoursNonbillable Hour
+	TodayStartTime   time.Time
 }
 
 func getCurrentWeeklyTrackedHours(a GetHoursStatisticsArgs, startDate time.Time, endDate time.Time) hc.TrackedHours {
@@ -80,9 +83,10 @@ func getExpectedHoursFromSchedule(ts time.Time, todayStartTime time.Time, schedu
 
 func getHours(ts time.Time, todayStartTime time.Time, actual hc.TimeEntry, expected fc.TimeEntry) Hour {
 	return Hour{
-		ExpectedTotal: expected.Total,
-		Actual:        actual.Total,
-		Expected:      getExpectedHoursFromSchedule(ts, todayStartTime, expected.Schedule),
+		ExpectedTotal:    expected.Total,
+		ExpectedSchedule: expected.Schedule,
+		Actual:           actual.Total,
+		Expected:         getExpectedHoursFromSchedule(ts, todayStartTime, expected.Schedule),
 	}
 }
 
@@ -145,5 +149,6 @@ func getActualAndExpectedHours(a GetHoursStatisticsArgs, s StatisticDates) Hours
 		HoursBillable:    getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHours.Hours.HoursBillable, expectedHours.HoursBillable),
 		HoursNonbillable: getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHours.Hours.HoursNonbillable, expectedHoursNonbillables),
 		HoursAll:         getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHours.Hours.HoursAll, expectedHoursAll),
+		TodayStartTime:   actualHours.TodayStartTime,
 	}
 }

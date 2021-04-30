@@ -47,7 +47,7 @@ func TestGetCurrentStatus(t *testing.T) {
 
 	t.Run("Returns the correct status when in the grace period but ahead", func(t *testing.T) {
 
-		actual := getCurrentStatus(30.5, 30, 40)
+		actual := getCurrentStatus(30.25, 30, 40)
 		expected := StatusOnTrack
 
 		if actual != expected {
@@ -57,7 +57,7 @@ func TestGetCurrentStatus(t *testing.T) {
 
 	t.Run("Returns the correct status when in the grace period but behind", func(t *testing.T) {
 
-		actual := getCurrentStatus(29.5, 30, 40)
+		actual := getCurrentStatus(29.75, 30, 40)
 		expected := StatusOnTrack
 
 		if actual != expected {

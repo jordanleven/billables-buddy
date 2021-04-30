@@ -7,7 +7,7 @@ import (
 type Status int
 
 const (
-	gracePeriodInHours        = 0.5
+	gracePeriodInHours        = 0.25
 	StatusOnTrack      Status = iota
 	StatusAhead
 	StatusBehind
