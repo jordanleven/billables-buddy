@@ -1,5 +1,7 @@
 package harvestclient
 
+import "log"
+
 const (
 	PathURLHarvestUserMe = "/users/me"
 )
@@ -11,7 +13,11 @@ type HarvestUserResponse struct {
 
 func (c HarvestClient) getCurrentUserID() int {
 	var user HarvestUserResponse
-	c.get(PathURLHarvestUserMe, DefaultArgs(), &user)
+	err := c.get(PathURLHarvestUserMe, DefaultArgs(), &user)
+
+	if err != nil {
+		log.Fatalln("Error retrieving Harvest user ID:", err)
+	}
 
 	return user.ID
 }

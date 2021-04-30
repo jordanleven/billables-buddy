@@ -2,6 +2,7 @@ package harvestclient
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -112,7 +113,11 @@ func (c HarvestClient) getHarvestTimeEntries(userID int, startDate time.Time, en
 		"from":    getFormattedHarvestAPIDate(startDate),
 		"to":      getFormattedHarvestAPIDate(endDate),
 	}
-	c.get(PathURLHarvestTimeEntries, args, &entries)
+	err := c.get(PathURLHarvestTimeEntries, args, &entries)
+
+	if err != nil {
+		log.Fatalln("Error retrieving Harvest time entries:", err)
+	}
 
 	return entries
 }

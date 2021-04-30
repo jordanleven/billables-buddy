@@ -44,9 +44,13 @@ func (c HarvestClient) get(path string, args Arguments, target interface{}) erro
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 
-	if err == nil {
-		json.Unmarshal(body, &target)
+	err = json.Unmarshal(body, &target)
+	if err != nil {
+		return err
 	}
 
 	return nil

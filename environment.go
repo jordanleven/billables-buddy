@@ -1,13 +1,13 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
 const (
-	EnvironmentProduction                     = "production"
 	EnvironmentDevelopment                    = "development"
 	EnvironmentConfigurationForecastAccountID = "FORECAST_ACCOUNT_ID"
 	EnvironmentConfigurationHarvestToken      = "HARVEST_ACCOUNT_TOKEN"
@@ -26,7 +26,10 @@ func getEnvironmentVariable(v string) string {
 }
 
 func loadVariablesFromEnvFile() {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalln("Error loading environmental variables:", err)
+	}
 	forecastAccountId = getEnvironmentVariable(EnvironmentConfigurationForecastAccountID)
 	harvestAccountToken = getEnvironmentVariable(EnvironmentConfigurationHarvestToken)
 	harvestAccountId = getEnvironmentVariable(EnvironmentConfigurationHarvestAccountID)
