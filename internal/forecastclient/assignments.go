@@ -60,7 +60,7 @@ func getTotalAssignmentHoursFromEvaluator(a Assignments, evaluator assignmentEva
 func getScheduleFromDates(schedule Schedule, startDate time.Time, totalDays int, hoursPerDay float64) Schedule {
 	for i := 0; i < totalDays; i++ {
 		assignmentDate := startDate.AddDate(0, 0, i)
-		schedule[assignmentDate] = hoursPerDay
+		schedule[assignmentDate] += hoursPerDay
 	}
 	return schedule
 }
