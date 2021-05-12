@@ -80,9 +80,43 @@ func TestGetRemainingHours(t *testing.T) {
 }
 
 func TestGetEstimatedEndOfDay(t *testing.T) {
+	weekStart := time.Date(1984, 1, 23, 00, 00, 00, 00, time.UTC)
+
+	billables := Hour{}
+	billables.Actual = 0
+	// Sum is 24
+	billables.ExpectedSchedule = Schedule{
+		// Monday
+		weekStart.AddDate(0, 0, 0): 6.4,
+		weekStart.AddDate(0, 0, 1): 6.4,
+		weekStart.AddDate(0, 0, 2): 6.4,
+		weekStart.AddDate(0, 0, 3): 6.4,
+		weekStart.AddDate(0, 0, 4): 6.4,
+		weekStart.AddDate(0, 0, 5): 0,
+		// Sunday
+		weekStart.AddDate(0, 0, 6): 0,
+	}
+
+	nonbillables := Hour{}
+	nonbillables.Actual = 0
+	// Sum is 8
+	nonbillables.ExpectedSchedule = Schedule{
+		// Monday
+		weekStart.AddDate(0, 0, 0): 1.6,
+		weekStart.AddDate(0, 0, 1): 1.6,
+		weekStart.AddDate(0, 0, 2): 1.6,
+		weekStart.AddDate(0, 0, 3): 1.6,
+		weekStart.AddDate(0, 0, 4): 1.6,
+		weekStart.AddDate(0, 0, 5): 0,
+		// Sunday
+		weekStart.AddDate(0, 0, 6): 0,
+	}
+
 	t.Run("Returns a zero time if the remaining hours are less than zero", func(t *testing.T) {
 		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
-		actual := getEstimatedEndOfDay(ts, -1)
+		billables.Actual = 40
+		nonbillables.Actual = 40
+		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
 
 		if !actual.IsZero() {
 			t.Errorf("Received %s; want zero time", actual)
@@ -91,8 +125,10 @@ func TestGetEstimatedEndOfDay(t *testing.T) {
 
 	t.Run("Returns an estimated EOD that adds the number of remaining hours if less than the workday working hours", func(t *testing.T) {
 		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
-		actual := getEstimatedEndOfDay(ts, 5)
-		expected := time.Date(1984, 1, 24, 13, 30, 0, 0, time.UTC)
+		billables.Actual = 6
+		nonbillables.Actual = 2
+		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		expected := time.Date(1984, 1, 24, 16, 30, 0, 0, time.UTC)
 
 		if actual != expected {
 			t.Errorf("Received %s; want %s", actual, expected)
@@ -100,9 +136,35 @@ func TestGetEstimatedEndOfDay(t *testing.T) {
 	})
 
 	t.Run("Returns an estimated EOD that maxes out at the workday working hours", func(t *testing.T) {
-		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
-		actual := getEstimatedEndOfDay(ts, 30)
-		expected := time.Date(1984, 1, 24, 16, 30, 0, 0, time.UTC)
+		ts := time.Date(1984, 1, 25, 8, 30, 0, 0, time.UTC)
+		billables.Actual = 0
+		nonbillables.Actual = 0
+		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		expected := time.Date(1984, 1, 25, 16, 30, 0, 0, time.UTC)
+
+		if actual != expected {
+			t.Errorf("Received %s; want %s", actual, expected)
+		}
+	})
+
+	t.Run("Returns a shortened day if the user is ahead on billables but has not fulfilled their nonbillables", func(t *testing.T) {
+		ts := time.Date(1984, 1, 27, 8, 30, 0, 0, time.UTC)
+		billables.Actual = 38
+		nonbillables.Actual = 0
+		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		expected := time.Date(1984, 1, 27, 10, 30, 0, 0, time.UTC)
+
+		if actual != expected {
+			t.Errorf("Received %s; want %s", actual, expected)
+		}
+	})
+
+	t.Run("Does not return a shortened day if the user is ahead on nonbillables but has not fulfilled their billables", func(t *testing.T) {
+		ts := time.Date(1984, 1, 27, 8, 30, 0, 0, time.UTC)
+		billables.Actual = 24
+		nonbillables.Actual = 15
+		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		expected := time.Date(1984, 1, 27, 16, 30, 0, 0, time.UTC)
 
 		if actual != expected {
 			t.Errorf("Received %s; want %s", actual, expected)
@@ -142,10 +204,12 @@ func TestGetHoursRemaining(t *testing.T) {
 		actual := getHoursRemaining(
 			ts,
 			startTime,
-			Hour{Actual: 0,
+			Hour{
+				Actual:           0,
 				ExpectedSchedule: scheduleBillables,
 			},
-			Hour{Actual: 0,
+			Hour{
+				Actual:           0,
 				ExpectedSchedule: scheduleNonbillables,
 			},
 		)
