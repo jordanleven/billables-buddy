@@ -35,21 +35,32 @@ func getAssignmentDateFromString(d string) time.Time {
 	return tF
 }
 
-func getTotalAssignmentDays(a Assignment) int {
-	assignmentS := getAssignmentDateFromString(a.StartDate)
+func getTotalAssignmentDays(startDate time.Time, a Assignment) int {
+	// We'll assume that all employees end their scheduled week on a
+	// Friday and are not scheduled to work on weekends
+	daysBetweenWeekStartAndEnd := int(time.Friday - startDate.Weekday())
+	assignmentEndMax := startDate.AddDate(0, 0, daysBetweenWeekStartAndEnd)
+	assignmentS := startDate
 	assignmentE := getAssignmentDateFromString(a.EndDate)
+	// If the project assignment is after the max date, then the user has
+	// been scheduled for a project that spans weeks in Forecast (instead of
+	// being blocked off on a week-to-week basis) so we need to cap the week
+	// at the end of this current week.
+	if assignmentE.After(assignmentEndMax) {
+		assignmentE = assignmentEndMax
+	}
 	totalDays := (assignmentE.Sub(assignmentS).Hours() / 24) + 1
 	return int(totalDays)
 }
 
-func getTotalAssignmentHoursFromEvaluator(a Assignments, evaluator assignmentEvaluator) float64 {
+func getTotalAssignmentHoursFromEvaluator(startDate time.Time, a Assignments, evaluator assignmentEvaluator) float64 {
 	var hours float64 = 0.0
 	for _, assignment := range a {
 		if !evaluator(assignment) {
 			continue
 		}
 		assignmentHours := getAssignmentAllocationInHours(assignment)
-		assignmentDays := getTotalAssignmentDays(assignment)
+		assignmentDays := getTotalAssignmentDays(startDate, assignment)
 		totalHours := assignmentHours * float64(assignmentDays)
 		hours += totalHours
 	}
@@ -60,7 +71,12 @@ func getTotalAssignmentHoursFromEvaluator(a Assignments, evaluator assignmentEva
 func getScheduleFromDates(schedule Schedule, startDate time.Time, totalDays int, hoursPerDay float64) Schedule {
 	for i := 0; i < totalDays; i++ {
 		assignmentDate := startDate.AddDate(0, 0, i)
-		schedule[assignmentDate] += hoursPerDay
+		// Don't add any schedules on days that are not
+		// already represented in the schedule
+		_, ok := schedule[assignmentDate]
+		if ok {
+			schedule[assignmentDate] += hoursPerDay
+		}
 	}
 	return schedule
 }
@@ -80,12 +96,14 @@ func getScheduledHoursFromEvaluator(startDate time.Time, a Assignments, evaluato
 		if !evaluator(assignment) {
 			continue
 		}
-		startDate := getAssignmentDateFromString(assignment.StartDate)
+		assignmentStartDate := getAssignmentDateFromString(assignment.StartDate)
+		if assignmentStartDate.Before(startDate) {
+			assignmentStartDate = startDate
+		}
+
 		assignmentHoursPerDay := getAssignmentAllocationInHours(assignment)
-		assignmentDays := getTotalAssignmentDays(assignment)
-
-		schedule = getScheduleFromDates(schedule, startDate, assignmentDays, assignmentHoursPerDay)
-
+		assignmentDays := getTotalAssignmentDays(assignmentStartDate, assignment)
+		schedule = getScheduleFromDates(schedule, assignmentStartDate, assignmentDays, assignmentHoursPerDay)
 	}
 
 	return schedule
@@ -93,7 +111,7 @@ func getScheduledHoursFromEvaluator(startDate time.Time, a Assignments, evaluato
 
 func getEvaluatedHoursFromAssignments(startDate time.Time, a Assignments, evaluator assignmentEvaluator) TimeEntry {
 	return TimeEntry{
-		Total:    getTotalAssignmentHoursFromEvaluator(a, evaluator),
+		Total:    getTotalAssignmentHoursFromEvaluator(startDate, a, evaluator),
 		Schedule: getScheduledHoursFromEvaluator(startDate, a, evaluator),
 	}
 }
@@ -105,6 +123,7 @@ func (c *ForecastClient) getUserAssignments(startDate time.Time, endDate time.Ti
 		PersonID:  uid.ID,
 		StartDate: getFormattedForecastAPIDate(startDate),
 		EndDate:   getFormattedForecastAPIDate(endDateAdjust),
+		State:     "active",
 	}
 
 	userAssignments, _ := c.Client.AssignmentsWithFilter(filter)
