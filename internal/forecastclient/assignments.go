@@ -42,12 +42,20 @@ func getTotalAssignmentDays(startDate time.Time, a Assignment) int {
 	assignmentEndMax := startDate.AddDate(0, 0, daysBetweenWeekStartAndEnd)
 	assignmentS := startDate
 	assignmentE := getAssignmentDateFromString(a.EndDate)
+
 	// If the project assignment is after the max date, then the user has
 	// been scheduled for a project that spans weeks in Forecast (instead of
 	// being blocked off on a week-to-week basis) so we need to cap the week
 	// at the end of this current week.
 	if assignmentE.After(assignmentEndMax) {
 		assignmentE = assignmentEndMax
+	}
+	// If our assigned start date is after our week start date, then we're only
+	// on the project for part of the week. In this case, we should use the
+	// assignment start date
+	assignmentStartDate := getAssignmentDateFromString(a.StartDate)
+	if assignmentStartDate.After(assignmentS) {
+		assignmentS = assignmentStartDate
 	}
 	totalDays := (assignmentE.Sub(assignmentS).Hours() / 24) + 1
 	return int(totalDays)

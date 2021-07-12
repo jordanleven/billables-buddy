@@ -13,8 +13,16 @@ type Projects map[int]Project
 type forecastProject = forecast.RemainingBudgetedHoursItem
 type forecastProjects = forecast.RemainingBudgetedHours
 
+const (
+	TimeOffProjectID = 19829
+)
+
 func (p Projects) isAssignmentBillable(a Assignment) bool {
 	return p[a.ProjectID].IsBillable
+}
+
+func isAssignmentTimeOff(a Assignment) bool {
+	return a.ProjectID == TimeOffProjectID
 }
 
 func isProjectBillable(p forecastProject) bool {

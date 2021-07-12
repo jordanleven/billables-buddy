@@ -1,6 +1,7 @@
 package billablesbuddy
 
 import (
+	"math"
 	"time"
 
 	fc "github.com/jordanleven/billables-buddy/internal/forecastclient"
@@ -90,15 +91,19 @@ func getHours(ts time.Time, todayStartTime time.Time, actual hc.TimeEntry, expec
 	}
 }
 
-func getAdjustedNonbillablesSchedule(billable fc.Schedule, nonbillable fc.Schedule) fc.Schedule {
+func getAdjustedNonbillablesSchedule(billable fc.Schedule, nonbillable fc.Schedule, timeoff fc.Schedule) fc.Schedule {
 	scheduleAdjusted := fc.Schedule{}
 
 	for date, hours := range billable {
-		if hours == 0 {
-			continue
+		scheduledNonbillables := nonbillable[date]
+		scheduledTimeOff := timeoff[date]
+		nonScheduledNonBillables := 0.0
+
+		if hours > 0 || scheduledNonbillables > 0 || scheduledTimeOff > 0 {
+			nonScheduledNonBillables = math.Max(workdayWorkingDurationInHours-hours, scheduledNonbillables) - scheduledTimeOff
 		}
-		scheduledHours := hours + nonbillable[date]
-		scheduleAdjusted[date] = workdayWorkingDurationInHours - scheduledHours
+
+		scheduleAdjusted[date] = nonScheduledNonBillables
 	}
 
 	return scheduleAdjusted
@@ -124,8 +129,7 @@ func getTotalHoursFromSchedule(schedule fc.Schedule) float64 {
 }
 
 func getAdjustedHoursNonbillables(schedule fc.ExpectedHours) fc.TimeEntry {
-	adjustedSchedule := getAdjustedNonbillablesSchedule(schedule.HoursBillable.Schedule, schedule.HoursNonbillable.Schedule)
-
+	adjustedSchedule := getAdjustedNonbillablesSchedule(schedule.HoursBillable.Schedule, schedule.HoursNonbillable.Schedule, schedule.HoursTimeOff.Schedule)
 	adjustedExpectedNonbillables := schedule.HoursNonbillable
 	adjustedExpectedNonbillables.Schedule = adjustedSchedule
 	adjustedExpectedNonbillables.Total = getTotalHoursFromSchedule(adjustedSchedule)

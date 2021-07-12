@@ -14,18 +14,20 @@ type ExpectedHours struct {
 	HoursAll         TimeEntry
 	HoursBillable    TimeEntry
 	HoursNonbillable TimeEntry
+	HoursTimeOff     TimeEntry
 }
 
 func (c *ForecastClient) getHoursFromAssignments(startDate time.Time, a Assignments) ExpectedHours {
 	projects := c.getProjets()
-	evaluatorAll := func(a Assignment) bool { return true }
+	evaluatorAll := func(a Assignment) bool { return !isAssignmentTimeOff(a) }
 	evaluatorBillable := projects.isAssignmentBillable
-	evaluatorNonbillable := func(a Assignment) bool { return !projects.isAssignmentBillable(a) }
+	evaluatorNonbillable := func(a Assignment) bool { return !projects.isAssignmentBillable(a) && !isAssignmentTimeOff(a) }
 
 	return ExpectedHours{
 		HoursAll:         getEvaluatedHoursFromAssignments(startDate, a, evaluatorAll),
 		HoursBillable:    getEvaluatedHoursFromAssignments(startDate, a, evaluatorBillable),
 		HoursNonbillable: getEvaluatedHoursFromAssignments(startDate, a, evaluatorNonbillable),
+		HoursTimeOff:     getEvaluatedHoursFromAssignments(startDate, a, isAssignmentTimeOff),
 	}
 }
 
