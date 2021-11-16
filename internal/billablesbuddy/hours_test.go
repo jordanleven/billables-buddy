@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	fc "github.com/jordanleven/billables-buddy/internal/forecastclient"
+	fc "billables-buddy/internal/forecastclient"
 )
 
 func schedulesAreEqual(actual fc.Schedule, expected fc.Schedule) (bool, float64, float64) {

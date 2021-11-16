@@ -1,4 +1,4 @@
-module github.com/jordanleven/billables-buddy
+module billables-buddy
 
 go 1.16
 

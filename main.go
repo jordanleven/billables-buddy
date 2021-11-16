@@ -5,7 +5,8 @@ import (
 	"math"
 	"time"
 
-	bb "github.com/jordanleven/billables-buddy/internal/billablesbuddy"
+	bb "billables-buddy/internal/billablesbuddy"
+
 	"github.com/kyokomi/emoji/v2"
 )
 

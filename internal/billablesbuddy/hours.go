@@ -4,8 +4,9 @@ import (
 	"math"
 	"time"
 
-	fc "github.com/jordanleven/billables-buddy/internal/forecastclient"
-	hc "github.com/jordanleven/billables-buddy/internal/harvestclient"
+	fc "billables-buddy/internal/forecastclient"
+
+	hc "billables-buddy/internal/harvestclient"
 )
 
 const (
