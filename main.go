@@ -118,10 +118,17 @@ func printCurrentHoursProgress(isOver bool, hours bb.HoursStatistic) {
 }
 
 func printHourStatistics(s HoursStatistics) {
-
 	printHoursStatistic("Total Hours", s.HoursAll)
 	printHoursStatistic("Billable Hours", s.HoursBillable)
 	printHoursStatistic("Non-billable Hours", s.HoursNonbillable)
+}
+
+func printProjectStatistics(projects []bb.HoursProject) {
+	for _, project := range projects {
+		projectName := project.ProjectName
+		projectHours := project.ProjectHours
+		printHoursStatistic(projectName, projectHours)
+	}
 }
 
 func printCurrentBillables(s HoursStatistics) {
@@ -130,7 +137,8 @@ func printCurrentBillables(s HoursStatistics) {
 	maybeShowCurrentHoursProgress(s.Status, s.HoursBillable)
 	printMenuSeperator()
 	printHourStatistics(s)
-
+	printMenuSeperator()
+	printProjectStatistics(s.HoursByProject)
 }
 
 func main() {

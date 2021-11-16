@@ -4,14 +4,21 @@ import (
 	"github.com/joefitzgerald/forecast"
 )
 
-type Project struct {
-	IsBillable bool
-}
-
 type Projects map[int]Project
 
-type forecastProject = forecast.RemainingBudgetedHoursItem
-type forecastProjects = forecast.RemainingBudgetedHours
+type forecastProjectRemainingBudget = forecast.RemainingBudgetedHoursItem
+type forecastProjectsRemainingBudget = forecast.RemainingBudgetedHours
+
+type Project struct {
+	IsBillable bool
+	Name       string
+	HarvestID  int
+}
+
+type ForecastProject struct {
+	Name      string
+	HarvestID int
+}
 
 const (
 	TimeOffProjectID = 19829
@@ -25,16 +32,20 @@ func isAssignmentTimeOff(a Assignment) bool {
 	return a.ProjectID == TimeOffProjectID
 }
 
-func isProjectBillable(p forecastProject) bool {
+func isProjectBillable(p forecastProjectRemainingBudget) bool {
 	return p.BudgetBy == "project"
 }
 
-func getFormattedProjects(allProjects forecastProjects) Projects {
+func getFormattedProjects(allProjects forecastProjectsRemainingBudget, projectNames map[int]ForecastProject) Projects {
 	projects := make(Projects)
 
 	for _, project := range allProjects {
+		projectID := project.ProjectID
+
 		projectF := Project{
 			IsBillable: isProjectBillable(project),
+			Name:       projectNames[projectID].Name,
+			HarvestID:  projectNames[projectID].HarvestID,
 		}
 		projects[project.ProjectID] = projectF
 	}
@@ -42,12 +53,34 @@ func getFormattedProjects(allProjects forecastProjects) Projects {
 	return projects
 }
 
-func (c *ForecastClient) getProjectsWithRemainingBudged() forecastProjects {
-	allProjects, _ := c.Client.RemainingBudgetedHours()
-	return allProjects
+func (c *ForecastClient) getProjectsWithRemainingBudged() forecastProjectsRemainingBudget {
+	allProjectsWithRemainingBudget, _ := c.Client.RemainingBudgetedHours()
+	return allProjectsWithRemainingBudget
+}
+
+func (c *ForecastClient) getProjectNames() map[int]ForecastProject {
+	allProjects, _ := c.Client.Projects()
+	projectsByName := make(map[int]ForecastProject)
+
+	for _, project := range allProjects {
+		projectID := project.ID
+		projectName := project.Name
+		projectHarvestID := project.HarvestID
+		isArchived := project.Archived
+
+		if !isArchived {
+			projectsByName[projectID] = ForecastProject{
+				Name:      projectName,
+				HarvestID: projectHarvestID,
+			}
+		}
+	}
+
+	return projectsByName
 }
 
 func (c *ForecastClient) getProjets() Projects {
-	allProjects := c.getProjectsWithRemainingBudged()
-	return getFormattedProjects(allProjects)
+	allProjectsWithRemainingBudget := c.getProjectsWithRemainingBudged()
+	projectNames := c.getProjectNames()
+	return getFormattedProjects(allProjectsWithRemainingBudget, projectNames)
 }

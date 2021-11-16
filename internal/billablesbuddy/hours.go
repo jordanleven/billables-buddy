@@ -15,6 +15,7 @@ const (
 )
 
 type Schedule = fc.Schedule
+
 type Hour struct {
 	Actual           float64
 	Expected         float64
@@ -22,11 +23,21 @@ type Hour struct {
 	ExpectedTotal    float64
 }
 
-type Hours struct {
+type ProjectHours struct {
+	Name  string
+	Hours Hour
+}
+
+type HoursConsolidated struct {
 	HoursAll         Hour
 	HoursBillable    Hour
 	HoursNonbillable Hour
-	TodayStartTime   time.Time
+}
+
+type Hours struct {
+	TodayStartTime    time.Time
+	HoursConsolidated HoursConsolidated
+	HoursByProject    []ProjectHours
 }
 
 func getCurrentWeeklyTrackedHours(a GetHoursStatisticsArgs, startDate time.Time, endDate time.Time) hc.TrackedHours {
@@ -129,7 +140,7 @@ func getTotalHoursFromSchedule(schedule fc.Schedule) float64 {
 	return totalHours
 }
 
-func getAdjustedHoursNonbillables(schedule fc.ExpectedHours) fc.TimeEntry {
+func getAdjustedHoursNonbillables(schedule fc.ExpectedHoursConsolidated) fc.TimeEntry {
 	adjustedSchedule := getAdjustedNonbillablesSchedule(schedule.HoursBillable.Schedule, schedule.HoursNonbillable.Schedule, schedule.HoursTimeOff.Schedule)
 	adjustedExpectedNonbillables := schedule.HoursNonbillable
 	adjustedExpectedNonbillables.Schedule = adjustedSchedule
@@ -144,16 +155,49 @@ func getAdjustedHoursAll(billables fc.TimeEntry, nonbillables fc.TimeEntry) fc.T
 	}
 }
 
+func getHoursConsolidated(s StatisticDates, actualHours hc.TrackedHours, expectedHours fc.ExpectedHours) HoursConsolidated {
+	expectedHoursConsolidated := expectedHours.HoursConsolidated
+	expectedHoursNonbillables := getAdjustedHoursNonbillables(expectedHoursConsolidated)
+	expectedHoursAll := getAdjustedHoursAll(expectedHoursConsolidated.HoursBillable, expectedHoursNonbillables)
+
+	actualHoursConsolidated := actualHours.HoursConsolidated
+
+	return HoursConsolidated{
+		HoursBillable:    getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHoursConsolidated.HoursBillable, expectedHoursConsolidated.HoursBillable),
+		HoursNonbillable: getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHoursConsolidated.HoursNonbillable, expectedHoursNonbillables),
+		HoursAll:         getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHoursConsolidated.HoursAll, expectedHoursAll),
+	}
+}
+
+func getHoursByProject(s StatisticDates, actualHours hc.TrackedHours, expectedHours fc.ExpectedHours) []ProjectHours {
+	var hoursByProject []ProjectHours
+
+	for _, assignment := range expectedHours.HoursByProject {
+		harvestID := assignment.HarvestID
+		expectedProjectHours := assignment.Hours
+		actualProjectHours := actualHours.HoursByProject[harvestID].Hours
+
+		project := ProjectHours{
+			Name:  assignment.ProjectName,
+			Hours: getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualProjectHours, expectedProjectHours),
+		}
+
+		hoursByProject = append(hoursByProject, project)
+	}
+
+	return hoursByProject
+}
+
 func getActualAndExpectedHours(a GetHoursStatisticsArgs, s StatisticDates) Hours {
 	actualHours := getCurrentWeeklyTrackedHours(a, s.WorkweekBegin, s.WorkweekEnd)
 	expectedHours := getCurrentWeeklyExpectedHours(a, s.WorkweekBegin, s.WorkweekEnd)
-	expectedHoursNonbillables := getAdjustedHoursNonbillables(expectedHours)
-	expectedHoursAll := getAdjustedHoursAll(expectedHours.HoursBillable, expectedHoursNonbillables)
+
+	hoursConsolidated := getHoursConsolidated(s, actualHours, expectedHours)
+	hoursByProject := getHoursByProject(s, actualHours, expectedHours)
 
 	return Hours{
-		HoursBillable:    getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHours.Hours.HoursBillable, expectedHours.HoursBillable),
-		HoursNonbillable: getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHours.Hours.HoursNonbillable, expectedHoursNonbillables),
-		HoursAll:         getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHours.Hours.HoursAll, expectedHoursAll),
-		TodayStartTime:   actualHours.TodayStartTime,
+		TodayStartTime:    actualHours.TodayStartTime,
+		HoursConsolidated: hoursConsolidated,
+		HoursByProject:    hoursByProject,
 	}
 }

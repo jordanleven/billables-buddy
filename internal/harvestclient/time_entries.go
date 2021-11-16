@@ -10,9 +10,15 @@ const (
 	PathURLHarvestTimeEntries = "/time_entries"
 )
 
+type HarvestProject struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 type HarvestTimeEntryResponse struct {
-	Hours        float64   `json:"hours"`
-	HoursRounded float64   `json:"rounded_hours"`
+	Hours        float64 `json:"hours"`
+	HoursRounded float64 `json:"rounded_hours"`
+	Project      HarvestProject
 	Billable     bool      `json:"billable"`
 	Date         string    `json:"spent_date"`
 	Notes        string    `json:"notes"`

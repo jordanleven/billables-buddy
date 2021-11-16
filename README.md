@@ -14,6 +14,7 @@ Using your schedule in Forecast, and your tracked hours in Harvest, Billables Bu
 - Tells you the time of your estimated end-of-day based on tracked hours.
 - A tracking percentage shows your actual to expected billable hours, along with the delta. Need more detail? Click on it to go directly to the week view in Harvest.
 - Gives you a breakdown of your total, billable, and non-billable hours.
+- Gives you a breakdown of your actual and expected per project assignment.
 - Shows your expected hours that are updated throughout the day based on your starting time.
 - Automatically updates every five minutes to keep your data up-to-date.
 

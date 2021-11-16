@@ -9,27 +9,58 @@ type HarvestClient struct {
 	AccountID string
 }
 
-type Hours struct {
+type HoursConsolidated struct {
 	HoursAll         TimeEntry
 	HoursBillable    TimeEntry
 	HoursNonbillable TimeEntry
 }
 
-type TrackedHours struct {
-	Hours          Hours
-	TodayStartTime time.Time
+type HarvestID = int
+
+type ProjectHours struct {
+	ProjectName string
+	Hours       TimeEntry
 }
 
-func getHoursFromEntries(startDate time.Time, entries HarvestTimeEntriesResponse) Hours {
+type HoursByProject map[HarvestID]ProjectHours
+
+type TrackedHours struct {
+	HoursConsolidated HoursConsolidated
+	HoursByProject    HoursByProject
+	TodayStartTime    time.Time
+}
+
+func getHoursFromEntries(startDate time.Time, entries HarvestTimeEntriesResponse) HoursConsolidated {
 	evaluatorTotal := func(e HarvestTimeEntryResponse) bool { return true }
 	evaluatorBillable := isEntryBillable
 	evaluatorNonbillable := func(e HarvestTimeEntryResponse) bool { return !isEntryBillable(e) }
 
-	return Hours{
+	return HoursConsolidated{
 		HoursAll:         getEvaluatedHoursFromEntries(startDate, entries, evaluatorTotal),
 		HoursBillable:    getEvaluatedHoursFromEntries(startDate, entries, evaluatorBillable),
 		HoursNonbillable: getEvaluatedHoursFromEntries(startDate, entries, evaluatorNonbillable),
 	}
+}
+
+func getHoursByProjectFromEntries(startDate time.Time, entries HarvestTimeEntriesResponse) HoursByProject {
+	projectsByID := make(HoursByProject)
+
+	for _, entry := range entries.HarvestTimeEntries {
+		projectID := entry.Project.ID
+		projectName := entry.Project.Name
+		if _, found := projectsByID[projectID]; found {
+			continue
+		}
+
+		evaluatorIsCurrentProject := func(entryLocal HarvestTimeEntryResponse) bool { return entryLocal.Project.ID == projectID }
+
+		projectsByID[projectID] = ProjectHours{
+			ProjectName: projectName,
+			Hours:       getEvaluatedHoursFromEntries(startDate, entries, evaluatorIsCurrentProject),
+		}
+	}
+
+	return projectsByID
 }
 
 func (c HarvestClient) GetTrackedHoursBetweenDates(startDate time.Time, endDate time.Time) TrackedHours {
@@ -38,8 +69,9 @@ func (c HarvestClient) GetTrackedHoursBetweenDates(startDate time.Time, endDate 
 	entries := c.getHarvestTimeEntries(userID, startDate, endDate)
 
 	return TrackedHours{
-		Hours:          getHoursFromEntries(startDate, entries),
-		TodayStartTime: getEarliestStartTimeFromEntries(ts, entries),
+		TodayStartTime:    getEarliestStartTimeFromEntries(ts, entries),
+		HoursConsolidated: getHoursFromEntries(startDate, entries),
+		HoursByProject:    getHoursByProjectFromEntries(startDate, entries),
 	}
 }
 

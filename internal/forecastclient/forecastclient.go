@@ -10,24 +10,69 @@ type ForecastClient struct {
 	Client *forecast.API
 }
 
-type ExpectedHours struct {
+type ExpectedHoursConsolidated struct {
 	HoursAll         TimeEntry
 	HoursBillable    TimeEntry
 	HoursNonbillable TimeEntry
 	HoursTimeOff     TimeEntry
 }
 
-func (c *ForecastClient) getHoursFromAssignments(startDate time.Time, a Assignments) ExpectedHours {
-	projects := c.getProjets()
+type ExpectedHoursByProject struct {
+	ProjectName string
+	HarvestID   int
+	Hours       TimeEntry
+}
+
+type ExpectedHours struct {
+	HoursConsolidated ExpectedHoursConsolidated
+	HoursByProject    map[int]ExpectedHoursByProject
+}
+
+func getConsolidatedHoursFromAssignments(startDate time.Time, a Assignments, projects Projects) ExpectedHoursConsolidated {
 	evaluatorAll := func(a Assignment) bool { return !isAssignmentTimeOff(a) }
 	evaluatorBillable := projects.isAssignmentBillable
 	evaluatorNonbillable := func(a Assignment) bool { return !projects.isAssignmentBillable(a) && !isAssignmentTimeOff(a) }
 
-	return ExpectedHours{
+	return ExpectedHoursConsolidated{
 		HoursAll:         getEvaluatedHoursFromAssignments(startDate, a, evaluatorAll),
 		HoursBillable:    getEvaluatedHoursFromAssignments(startDate, a, evaluatorBillable),
 		HoursNonbillable: getEvaluatedHoursFromAssignments(startDate, a, evaluatorNonbillable),
 		HoursTimeOff:     getEvaluatedHoursFromAssignments(startDate, a, isAssignmentTimeOff),
+	}
+}
+
+func getHoursByProjectFromAssignments(startDate time.Time, a Assignments, p Projects) map[int]ExpectedHoursByProject {
+	projectsByID := make(map[int]ExpectedHoursByProject)
+
+	for _, assignment := range a {
+		assignmentID := assignment.ID
+		projectID := assignment.ProjectID
+		evaluatorIsCurrentAssignment := func(aLocal Assignment) bool { return aLocal.ID == assignmentID }
+
+		projectName := p[projectID].Name
+		harvestID := p[projectID].HarvestID
+		hours := getEvaluatedHoursFromAssignments(startDate, a, evaluatorIsCurrentAssignment)
+
+		if harvestID != 0 {
+			projectsByID[projectID] = ExpectedHoursByProject{
+				ProjectName: projectName,
+				HarvestID:   harvestID,
+				Hours:       hours,
+			}
+		}
+	}
+
+	return projectsByID
+}
+
+func (c *ForecastClient) getHoursFromAssignments(startDate time.Time, a Assignments) ExpectedHours {
+	projects := c.getProjets()
+	hoursConsolidated := getConsolidatedHoursFromAssignments(startDate, a, projects)
+	hoursByProject := getHoursByProjectFromAssignments(startDate, a, projects)
+
+	return ExpectedHours{
+		HoursConsolidated: hoursConsolidated,
+		HoursByProject:    hoursByProject,
 	}
 }
 
