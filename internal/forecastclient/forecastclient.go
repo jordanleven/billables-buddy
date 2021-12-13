@@ -41,6 +41,19 @@ func getConsolidatedHoursFromAssignments(startDate time.Time, a Assignments, pro
 	}
 }
 
+func getCombinedProjectTimeEntry(a TimeEntry, b TimeEntry) TimeEntry {
+	updatedTimeEntry := a
+	updatedTimeEntry.Total = 0
+
+	for aDate, aValue := range updatedTimeEntry.Schedule {
+		bValue := b.Schedule[aDate]
+		updatedTimeEntry.Total += aValue + bValue
+		updatedTimeEntry.Schedule[aDate] += bValue
+	}
+
+	return updatedTimeEntry
+}
+
 func getHoursByProjectFromAssignments(startDate time.Time, a Assignments, p Projects) map[int]ExpectedHoursByProject {
 	projectsByID := make(map[int]ExpectedHoursByProject)
 
@@ -53,12 +66,19 @@ func getHoursByProjectFromAssignments(startDate time.Time, a Assignments, p Proj
 		harvestID := p[projectID].HarvestID
 		hours := getEvaluatedHoursFromAssignments(startDate, a, evaluatorIsCurrentAssignment)
 
-		if harvestID != 0 {
-			projectsByID[projectID] = ExpectedHoursByProject{
-				ProjectName: projectName,
-				HarvestID:   harvestID,
-				Hours:       hours,
-			}
+		if harvestID == 0 {
+			continue
+		}
+
+		// If the project assignment already exists, then we have a split assignment
+		if _, projectAssignmentExists := projectsByID[projectID]; projectAssignmentExists {
+			hours = getCombinedProjectTimeEntry(projectsByID[projectID].Hours, hours)
+		}
+
+		projectsByID[projectID] = ExpectedHoursByProject{
+			ProjectName: projectName,
+			HarvestID:   harvestID,
+			Hours:       hours,
 		}
 	}
 
