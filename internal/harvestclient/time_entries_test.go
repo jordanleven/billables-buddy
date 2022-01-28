@@ -79,31 +79,31 @@ func TestGetTotalHoursFromEvaluator(t *testing.T) {
 }
 
 func TestGetScheduledHoursFromEvaluator(t *testing.T) {
-	startTime := time.Date(1984, 01, 23, 0, 0, 0, 0, time.Local)
+	startTime := time.Date(1984, 01, 23, 0, 0, 0, 0, time.UTC)
 	evaluator := func(t HarvestTimeEntryResponse) bool {
 		return t.Billable
 	}
 	args := HarvestTimeEntriesResponse{
 		HarvestTimeEntries: []HarvestTimeEntryResponse{
 			{
-				Billable:  false,
-				Hours:     1.0,
-				TimeStart: time.Date(1984, 01, 24, 6, 29, 0, 0, time.UTC),
+				Billable: false,
+				Hours:    1.0,
+				Date:     "1984-01-24",
 			},
 			{
-				Billable:  true,
-				Hours:     2.5,
-				TimeStart: time.Date(1984, 01, 24, 6, 29, 0, 0, time.UTC),
+				Billable: true,
+				Hours:    2.5,
+				Date:     "1984-01-24",
 			},
 			{
-				Billable:  true,
-				Hours:     3.5,
-				TimeStart: time.Date(1984, 01, 24, 6, 29, 0, 0, time.UTC),
+				Billable: true,
+				Hours:    3.5,
+				Date:     "1984-01-24",
 			},
 			{
-				Billable:  true,
-				Hours:     1.2,
-				TimeStart: time.Date(1984, 01, 25, 6, 29, 0, 0, time.UTC),
+				Billable: true,
+				Hours:    1.2,
+				Date:     "1984-01-25",
 			},
 		},
 	}

@@ -73,7 +73,10 @@ func getScheduledHoursFromEvaluator(startDate time.Time, t HarvestTimeEntriesRes
 
 	for _, entry := range t.HarvestTimeEntries {
 		if evaluator(entry) {
-			dateL := entry.TimeStart.In(loc)
+			date, _ := time.Parse("2006-01-02", entry.Date)
+			// The dates that come back from Harvest are actually localized to the timezone they
+			// were entered in.
+			dateL := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc)
 			dateLF := time.Date(dateL.Year(), dateL.Month(), dateL.Day(), 0, 0, 0, 0, loc)
 			schedule[dateLF] += entry.Hours
 		}
