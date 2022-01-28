@@ -23,7 +23,7 @@ func getTotalExpectedHoursByEndOfDayFromSchedule(date time.Time, s Schedule) flo
 
 func getRemainingHours(date time.Time, h Hour) float64 {
 	eodRemainingHours := getTotalExpectedHoursByEndOfDayFromSchedule(date, h.ExpectedSchedule)
-	return eodRemainingHours - h.Actual
+	return eodRemainingHours - h.ActualCurrent
 }
 
 func getTotalExpectedHoursByEndOfDay(date time.Time, billables Hour, nonbillables Hour) float64 {
@@ -45,7 +45,7 @@ func getEstimatedEndOfDay(ts time.Time, billables Hour, nonbillables Hour) time.
 	}
 
 	remainingHoursAll := remainingHoursBillable + remainingHoursNonbillable
-	actualHoursAll := billables.Actual + nonbillables.Actual
+	actualHoursAll := billables.ActualCurrent + nonbillables.ActualCurrent
 	eodExpectedHours := getTotalExpectedHoursByEndOfDay(date, billables, nonbillables)
 
 	switch {

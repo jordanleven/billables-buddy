@@ -17,10 +17,10 @@ const (
 type Schedule = fc.Schedule
 
 type Hour struct {
-	Actual           float64
-	Expected         float64
-	ExpectedSchedule Schedule
-	ExpectedTotal    float64
+	ExpectedCurrent   float64
+	ExpectedEndOfWeek float64
+	ExpectedSchedule  Schedule
+	ActualCurrent     float64
 }
 
 type ProjectHours struct {
@@ -96,10 +96,10 @@ func getExpectedHoursFromSchedule(ts time.Time, todayStartTime time.Time, schedu
 
 func getHours(ts time.Time, todayStartTime time.Time, actual hc.TimeEntry, expected fc.TimeEntry) Hour {
 	return Hour{
-		ExpectedTotal:    expected.Total,
-		ExpectedSchedule: expected.Schedule,
-		Actual:           actual.Total,
-		Expected:         getExpectedHoursFromSchedule(ts, todayStartTime, expected.Schedule),
+		ExpectedCurrent:   getExpectedHoursFromSchedule(ts, todayStartTime, expected.Schedule),
+		ExpectedEndOfWeek: expected.Total,
+		ExpectedSchedule:  expected.Schedule,
+		ActualCurrent:     actual.Total,
 	}
 }
 

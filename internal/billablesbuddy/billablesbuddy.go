@@ -36,8 +36,8 @@ func getTrackedHoursByProject(hoursByProject []ProjectHours) []HoursProject {
 		hoursProject := HoursProject{
 			ProjectName: project.Name,
 			ProjectHours: HoursStatistic{
-				HoursActual:   project.Hours.Actual,
-				HoursExpected: project.Hours.Expected,
+				HoursActual:   project.Hours.ActualCurrent,
+				HoursExpected: project.Hours.ExpectedCurrent,
 			},
 		}
 		trackedHoursByProject = append(trackedHoursByProject, hoursProject)
@@ -59,23 +59,23 @@ func GetTrackedHoursStatistics(args GetHoursStatisticsArgs) HoursStatistics {
 	hConsolidatedNonBillable := hConsolidated.HoursNonbillable
 	hByProject := getTrackedHoursByProject(h.HoursByProject)
 
-	s := getCurrentStatus(hConsolidatedBillable.Actual, hConsolidatedBillable.Expected, hConsolidatedBillable.ExpectedTotal)
+	s := getCurrentStatus(hConsolidatedBillable.ActualCurrent, hConsolidatedBillable.ExpectedCurrent, hConsolidatedBillable.ExpectedEndOfWeek)
 	hr := getHoursRemaining(statDates.CurrentTimestamp, h.TodayStartTime, hConsolidatedBillable, hConsolidatedNonBillable)
 
 	return HoursStatistics{
 		Status:         s,
 		HoursRemaining: hr,
 		HoursAll: HoursStatistic{
-			HoursActual:   hConsolidatedAll.Actual,
-			HoursExpected: hConsolidatedAll.Expected,
+			HoursActual:   hConsolidatedAll.ActualCurrent,
+			HoursExpected: hConsolidatedAll.ExpectedCurrent,
 		},
 		HoursBillable: HoursStatistic{
-			HoursActual:   hConsolidatedBillable.Actual,
-			HoursExpected: hConsolidatedBillable.Expected,
+			HoursActual:   hConsolidatedBillable.ActualCurrent,
+			HoursExpected: hConsolidatedBillable.ExpectedCurrent,
 		},
 		HoursNonbillable: HoursStatistic{
-			HoursActual:   hConsolidatedNonBillable.Actual,
-			HoursExpected: hConsolidatedNonBillable.Expected,
+			HoursActual:   hConsolidatedNonBillable.ActualCurrent,
+			HoursExpected: hConsolidatedNonBillable.ExpectedCurrent,
 		},
 		HoursByProject: hByProject,
 	}
