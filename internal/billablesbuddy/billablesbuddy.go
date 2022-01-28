@@ -2,6 +2,8 @@ package billablesbuddy
 
 import (
 	"sort"
+
+	fc "billables-buddy/internal/forecastclient"
 )
 
 type GetHoursStatisticsArgs struct {
@@ -11,8 +13,9 @@ type GetHoursStatisticsArgs struct {
 }
 
 type HoursStatistic struct {
-	HoursExpected float64
-	HoursActual   float64
+	HoursExpected    float64
+	HoursActual      float64
+	HoursActualToday float64
 }
 
 type HoursProject struct {
@@ -22,6 +25,8 @@ type HoursProject struct {
 
 type HoursStatistics struct {
 	Status
+	Person           fc.Person
+	HoursToday       float64
 	HoursAll         HoursStatistic
 	HoursBillable    HoursStatistic
 	HoursNonbillable HoursStatistic
@@ -64,18 +69,22 @@ func GetTrackedHoursStatistics(args GetHoursStatisticsArgs) HoursStatistics {
 
 	return HoursStatistics{
 		Status:         s,
+		Person:         h.Person,
 		HoursRemaining: hr,
 		HoursAll: HoursStatistic{
-			HoursActual:   hConsolidatedAll.ActualCurrent,
-			HoursExpected: hConsolidatedAll.ExpectedCurrent,
+			HoursActual:      hConsolidatedAll.ActualCurrent,
+			HoursExpected:    hConsolidatedAll.ExpectedCurrent,
+			HoursActualToday: hConsolidatedAll.ActualToday,
 		},
 		HoursBillable: HoursStatistic{
-			HoursActual:   hConsolidatedBillable.ActualCurrent,
-			HoursExpected: hConsolidatedBillable.ExpectedCurrent,
+			HoursActual:      hConsolidatedBillable.ActualCurrent,
+			HoursExpected:    hConsolidatedBillable.ExpectedCurrent,
+			HoursActualToday: hConsolidatedBillable.ActualToday,
 		},
 		HoursNonbillable: HoursStatistic{
-			HoursActual:   hConsolidatedNonBillable.ActualCurrent,
-			HoursExpected: hConsolidatedNonBillable.ExpectedCurrent,
+			HoursActual:      hConsolidatedNonBillable.ActualCurrent,
+			HoursExpected:    hConsolidatedNonBillable.ExpectedCurrent,
+			HoursActualToday: hConsolidatedNonBillable.ActualToday,
 		},
 		HoursByProject: hByProject,
 	}

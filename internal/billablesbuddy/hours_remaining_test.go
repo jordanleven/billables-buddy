@@ -116,7 +116,7 @@ func TestGetEstimatedEndOfDay(t *testing.T) {
 		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
 		billables.ActualCurrent = 40
 		nonbillables.ActualCurrent = 40
-		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		actual, _ := getEstimatedEndOfDay(ts, billables, nonbillables)
 
 		if !actual.IsZero() {
 			t.Errorf("Received %s; want zero time", actual)
@@ -127,7 +127,7 @@ func TestGetEstimatedEndOfDay(t *testing.T) {
 		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
 		billables.ActualCurrent = 6
 		nonbillables.ActualCurrent = 2
-		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		actual, _ := getEstimatedEndOfDay(ts, billables, nonbillables)
 		expected := time.Date(1984, 1, 24, 16, 30, 0, 0, time.UTC)
 
 		if actual != expected {
@@ -139,7 +139,7 @@ func TestGetEstimatedEndOfDay(t *testing.T) {
 		ts := time.Date(1984, 1, 25, 8, 30, 0, 0, time.UTC)
 		billables.ActualCurrent = 0
 		nonbillables.ActualCurrent = 0
-		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		actual, _ := getEstimatedEndOfDay(ts, billables, nonbillables)
 		expected := time.Date(1984, 1, 25, 16, 30, 0, 0, time.UTC)
 
 		if actual != expected {
@@ -151,7 +151,7 @@ func TestGetEstimatedEndOfDay(t *testing.T) {
 		ts := time.Date(1984, 1, 27, 8, 30, 0, 0, time.UTC)
 		billables.ActualCurrent = 38
 		nonbillables.ActualCurrent = 0
-		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		actual, _ := getEstimatedEndOfDay(ts, billables, nonbillables)
 		expected := time.Date(1984, 1, 27, 10, 30, 0, 0, time.UTC)
 
 		if actual != expected {
@@ -163,7 +163,7 @@ func TestGetEstimatedEndOfDay(t *testing.T) {
 		ts := time.Date(1984, 1, 27, 8, 30, 0, 0, time.UTC)
 		billables.ActualCurrent = 24
 		nonbillables.ActualCurrent = 15
-		actual := getEstimatedEndOfDay(ts, billables, nonbillables)
+		actual, _ := getEstimatedEndOfDay(ts, billables, nonbillables)
 		expected := time.Date(1984, 1, 27, 16, 30, 0, 0, time.UTC)
 
 		if actual != expected {
@@ -216,8 +216,82 @@ func TestGetHoursRemaining(t *testing.T) {
 		expected := HoursRemaining{
 			EstimatedEOD: time.Date(1984, 1, 24, 16, 30, 0, 0, time.UTC),
 		}
-		if actual != expected {
-			t.Errorf("Received %s; want %s", actual, expected)
+		if actual.EstimatedEOD != expected.EstimatedEOD {
+			t.Errorf("Received %s; want %s", actual.EstimatedEOD, expected.EstimatedEOD)
+		}
+	})
+
+	t.Run("Returns the correct status when the estimated EOD is available", func(t *testing.T) {
+		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
+		startTime := time.Date(1984, 1, 24, 8, 0, 0, 0, time.UTC)
+		actual := getHoursRemaining(
+			ts,
+			startTime,
+			Hour{
+				ActualCurrent:    0,
+				ExpectedSchedule: scheduleBillables,
+			},
+			Hour{
+				ActualCurrent:    0,
+				ExpectedSchedule: scheduleNonbillables,
+			},
+		)
+		expected := HoursRemaining{
+			EstimatedEODStatus: EstimatedEODStatusAvailable,
+		}
+
+		if actual.EstimatedEODStatus != expected.EstimatedEODStatus {
+			t.Errorf("Received %d; want %d", actual.EstimatedEODStatus, expected.EstimatedEODStatus)
+		}
+	})
+
+	t.Run("Returns the correct status when the user has worked over 8 hours today", func(t *testing.T) {
+		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
+		startTime := time.Date(1984, 1, 24, 8, 0, 0, 0, time.UTC)
+		actual := getHoursRemaining(
+			ts,
+			startTime,
+			Hour{
+				ActualToday:      8.5,
+				ExpectedSchedule: scheduleBillables,
+			},
+			Hour{
+				ActualToday:      0,
+				ExpectedSchedule: scheduleNonbillables,
+			},
+		)
+		expected := HoursRemaining{
+			EstimatedEODStatus: EstimatedEODStatusUnavailableDailyHoursOver,
+		}
+
+		if actual.EstimatedEODStatus != expected.EstimatedEODStatus {
+			t.Errorf("Received %d; want %d", actual.EstimatedEODStatus, expected.EstimatedEODStatus)
+		}
+	})
+
+	t.Run("Returns the correct status when the user has worked over their expected hours for the week", func(t *testing.T) {
+		ts := time.Date(1984, 1, 24, 8, 30, 0, 0, time.UTC)
+		startTime := time.Date(1984, 1, 24, 8, 0, 0, 0, time.UTC)
+		actual := getHoursRemaining(
+			ts,
+			startTime,
+			Hour{
+				ActualCurrent:    30,
+				ActualToday:      0,
+				ExpectedSchedule: scheduleBillables,
+			},
+			Hour{
+				ActualCurrent:    0,
+				ActualToday:      0,
+				ExpectedSchedule: scheduleNonbillables,
+			},
+		)
+		expected := HoursRemaining{
+			EstimatedEODStatus: EstimatedEODStatusUnavailableWeeklyHoursOver,
+		}
+
+		if actual.EstimatedEODStatus != expected.EstimatedEODStatus {
+			t.Errorf("Received %d; want %d", actual.EstimatedEODStatus, expected.EstimatedEODStatus)
 		}
 	})
 
@@ -235,7 +309,7 @@ func TestGetHoursRemaining(t *testing.T) {
 		)
 
 		if !actual.EstimatedEOD.IsZero() {
-			t.Errorf("Received %s; want nil time", actual)
+			t.Errorf("Received %s; want nil time", actual.EstimatedEOD)
 		}
 	})
 }

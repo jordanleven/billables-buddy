@@ -37,6 +37,7 @@ type HoursConsolidated struct {
 
 type Hours struct {
 	TodayStartTime    time.Time
+	Person            fc.Person
 	HoursConsolidated HoursConsolidated
 	HoursByProject    []ProjectHours
 }
@@ -203,6 +204,7 @@ func getActualAndExpectedHours(a GetHoursStatisticsArgs, s StatisticDates) Hours
 	hoursByProject := getHoursByProject(s, actualHours, expectedHours)
 
 	return Hours{
+		Person:            expectedHours.Person,
 		TodayStartTime:    actualHours.TodayStartTime,
 		HoursConsolidated: hoursConsolidated,
 		HoursByProject:    hoursByProject,

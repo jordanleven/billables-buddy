@@ -125,10 +125,10 @@ func getEvaluatedHoursFromAssignments(startDate time.Time, a Assignments, evalua
 }
 
 func (c *ForecastClient) getUserAssignments(startDate time.Time, endDate time.Time) Assignments {
-	uid := c.getCurrentUserID()
+	userID := c.getCurrentUserID()
 	endDateAdjust := endDate.AddDate(0, 0, -1)
 	filter := forecast.AssignmentFilter{
-		PersonID:  uid.ID,
+		PersonID:  userID,
 		StartDate: getFormattedForecastAPIDate(startDate),
 		EndDate:   getFormattedForecastAPIDate(endDateAdjust),
 		State:     "active",
