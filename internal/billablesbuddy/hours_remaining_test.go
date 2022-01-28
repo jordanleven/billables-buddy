@@ -68,7 +68,7 @@ func TestGetRemainingHours(t *testing.T) {
 		actual := getRemainingHours(
 			ts,
 			Hour{
-				Actual:           2.5,
+				ActualCurrent:    2.5,
 				ExpectedSchedule: schedule,
 			})
 		expected := 3.5

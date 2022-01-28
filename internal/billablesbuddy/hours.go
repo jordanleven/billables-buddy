@@ -21,6 +21,7 @@ type Hour struct {
 	ExpectedEndOfWeek float64
 	ExpectedSchedule  Schedule
 	ActualCurrent     float64
+	ActualToday       float64
 }
 
 type ProjectHours struct {
@@ -94,12 +95,18 @@ func getExpectedHoursFromSchedule(ts time.Time, todayStartTime time.Time, schedu
 	return hoursPreviousWorkday + hoursCurrentWorkday
 }
 
+func getActualHoursToday(ts time.Time, schedule hc.Schedule) float64 {
+	today := time.Date(ts.Year(), ts.Month(), ts.Day(), 0, 0, 0, 0, ts.Location())
+	return schedule[today]
+}
+
 func getHours(ts time.Time, todayStartTime time.Time, actual hc.TimeEntry, expected fc.TimeEntry) Hour {
 	return Hour{
 		ExpectedCurrent:   getExpectedHoursFromSchedule(ts, todayStartTime, expected.Schedule),
 		ExpectedEndOfWeek: expected.Total,
 		ExpectedSchedule:  expected.Schedule,
 		ActualCurrent:     actual.Total,
+		ActualToday:       getActualHoursToday(ts, actual.Schedule),
 	}
 }
 
