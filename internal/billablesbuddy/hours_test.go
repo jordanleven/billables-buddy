@@ -6,6 +6,7 @@ import (
 	"time"
 
 	fc "billables-buddy/internal/forecastclient"
+	hc "billables-buddy/internal/harvestclient"
 )
 
 func schedulesAreEqual(actual fc.Schedule, expected fc.Schedule) (bool, float64, float64) {
@@ -72,6 +73,30 @@ func TestGetCurrentWorkdayPercentageComplete(t *testing.T) {
 		startTime := time.Date(1984, 1, 24, 3, 0, 0, 0, time.UTC)
 
 		actual := getCurrentWorkdayPercentageComplete(ts, startTime)
+		expected := 1.0
+
+		if actual != expected {
+			t.Errorf("Received %f; want %f", actual, expected)
+		}
+	})
+}
+
+func TestGetActualHoursToday(t *testing.T) {
+	ts := time.Date(1984, 1, 24, 0, 00, 00, 00, time.UTC)
+	schedule := hc.Schedule{
+		// Monday
+		ts.AddDate(0, 0, 0): 1.0,
+		ts.AddDate(0, 0, 1): 2.0,
+		ts.AddDate(0, 0, 2): 4.0,
+		ts.AddDate(0, 0, 3): 6.0,
+		ts.AddDate(0, 0, 4): 8.0,
+		ts.AddDate(0, 0, 5): 10.0,
+		// Sunday
+		ts.AddDate(0, 0, 6): 7.0,
+	}
+
+	t.Run("Returns the correct hours worked today", func(t *testing.T) {
+		actual := getActualHoursToday(ts, schedule)
 		expected := 1.0
 
 		if actual != expected {

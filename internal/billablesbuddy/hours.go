@@ -17,10 +17,11 @@ const (
 type Schedule = fc.Schedule
 
 type Hour struct {
-	Actual           float64
-	Expected         float64
-	ExpectedSchedule Schedule
-	ExpectedTotal    float64
+	ExpectedCurrent   float64
+	ExpectedEndOfWeek float64
+	ExpectedSchedule  Schedule
+	ActualCurrent     float64
+	ActualToday       float64
 }
 
 type ProjectHours struct {
@@ -36,6 +37,7 @@ type HoursConsolidated struct {
 
 type Hours struct {
 	TodayStartTime    time.Time
+	Person            fc.Person
 	HoursConsolidated HoursConsolidated
 	HoursByProject    []ProjectHours
 }
@@ -101,12 +103,18 @@ func getExpectedHoursFromSchedule(ts time.Time, todayStartTime time.Time, schedu
 	return hoursPreviousWorkday + hoursCurrentWorkday
 }
 
+func getActualHoursToday(ts time.Time, schedule hc.Schedule) float64 {
+	today := time.Date(ts.Year(), ts.Month(), ts.Day(), 0, 0, 0, 0, ts.Location())
+	return schedule[today]
+}
+
 func getHours(opts getHoursOpt) Hour {
 	return Hour{
-		ExpectedTotal:    opts.expected.Total,
-		ExpectedSchedule: opts.expected.Schedule,
-		Actual:           opts.actual.Total,
-		Expected:         getExpectedHoursFromSchedule(opts.ts, opts.todayStartTime, opts.expected.Schedule),
+		ExpectedCurrent:   getExpectedHoursFromSchedule(opts.ts, opts.todayStartTime, opts.expected.Schedule),
+		ExpectedEndOfWeek: opts.expected.Total,
+		ExpectedSchedule:  opts.expected.Schedule,
+		ActualCurrent:     opts.actual.Total,
+		ActualToday:       getActualHoursToday(opts.ts, opts.actual.Schedule),
 	}
 }
 
@@ -278,6 +286,7 @@ func getActualAndExpectedHours(a GetHoursStatisticsArgs, s StatisticDates) Hours
 	hoursByProject := getHoursByProject(s, actualHours, expectedHours)
 
 	return Hours{
+		Person:            expectedHours.Person,
 		TodayStartTime:    actualHours.TodayStartTime,
 		HoursConsolidated: hoursConsolidated,
 		HoursByProject:    hoursByProject,

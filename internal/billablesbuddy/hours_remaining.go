@@ -4,8 +4,17 @@ import (
 	"time"
 )
 
+type EstimatedEODStatus int
+
+const (
+	EstimatedEODStatusAvailable EstimatedEODStatus = iota
+	EstimatedEODStatusUnavailableDailyHoursOver
+	EstimatedEODStatusUnavailableWeeklyHoursOver
+)
+
 type HoursRemaining struct {
 	EstimatedEOD time.Time
+	EstimatedEODStatus
 }
 
 func getTotalExpectedHoursByEndOfDayFromSchedule(date time.Time, s Schedule) float64 {
@@ -23,7 +32,7 @@ func getTotalExpectedHoursByEndOfDayFromSchedule(date time.Time, s Schedule) flo
 
 func getRemainingHours(date time.Time, h Hour) float64 {
 	eodRemainingHours := getTotalExpectedHoursByEndOfDayFromSchedule(date, h.ExpectedSchedule)
-	return eodRemainingHours - h.Actual
+	return eodRemainingHours - h.ActualCurrent
 }
 
 func getTotalExpectedHoursByEndOfDay(date time.Time, billables Hour, nonbillables Hour) float64 {
@@ -32,7 +41,7 @@ func getTotalExpectedHoursByEndOfDay(date time.Time, billables Hour, nonbillable
 	return eodRemainingHoursBillables + eodRemainingHoursNonbillables
 }
 
-func getEstimatedEndOfDay(ts time.Time, billables Hour, nonbillables Hour) time.Time {
+func getEstimatedEndOfDay(ts time.Time, billables Hour, nonbillables Hour) (time.Time, EstimatedEODStatus) {
 	date := getDateFromTime(ts)
 	remainingHoursBillable := getRemainingHours(date, billables)
 	remainingHoursNonbillable := getRemainingHours(date, nonbillables)
@@ -45,19 +54,22 @@ func getEstimatedEndOfDay(ts time.Time, billables Hour, nonbillables Hour) time.
 	}
 
 	remainingHoursAll := remainingHoursBillable + remainingHoursNonbillable
-	actualHoursAll := billables.Actual + nonbillables.Actual
+	actualHoursAll := billables.ActualCurrent + nonbillables.ActualCurrent
 	eodExpectedHours := getTotalExpectedHoursByEndOfDay(date, billables, nonbillables)
-
+	hoursToday := billables.ActualToday + nonbillables.ActualToday
 	switch {
-	case remainingHoursAll < 0, actualHoursAll > eodExpectedHours:
-		// EOD is in the past
-		return time.Time{}
+	// User has worked more than the specified working hours per day today
+	case hoursToday >= workdayWorkingDurationInHours:
+		return time.Time{}, EstimatedEODStatusUnavailableDailyHoursOver
+	// User has already worked all the expected hours this week
+	case actualHoursAll > eodExpectedHours:
+		return time.Time{}, EstimatedEODStatusUnavailableWeeklyHoursOver
+	// The remaining hours for the week are more than the regular number of working hours per day
 	case remainingHoursAll >= workdayWorkingDurationInHours:
-		// Remaining hours are longer than a single workday
-		return ts.Add(workdayWorkingDurationInHours * time.Hour)
+		return ts.Add(workdayWorkingDurationInHours * time.Hour), EstimatedEODStatusAvailable
 	default:
 		remainingMinutes := remainingHoursAll * 60
-		return ts.Add(time.Duration(remainingMinutes) * time.Minute)
+		return ts.Add(time.Duration(remainingMinutes) * time.Minute), EstimatedEODStatusAvailable
 	}
 }
 
@@ -65,7 +77,9 @@ func getHoursRemaining(ts time.Time, startTime time.Time, billables Hour, nonbil
 	hoursRemaining := HoursRemaining{}
 	// Only get the estimated EOD if the user has started work today
 	if !startTime.IsZero() {
-		hoursRemaining.EstimatedEOD = getEstimatedEndOfDay(ts, billables, nonbillables)
+		estimatedEOD, estimatedEODStatus := getEstimatedEndOfDay(ts, billables, nonbillables)
+		hoursRemaining.EstimatedEOD = estimatedEOD
+		hoursRemaining.EstimatedEODStatus = estimatedEODStatus
 	}
 
 	return hoursRemaining
