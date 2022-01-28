@@ -57,9 +57,9 @@ func printMenuTitle(s bb.Status) {
 func maybeShowEstimatedEndOfDay(h bb.HoursRemaining, hoursAll bb.HoursStatistic, hoursBillable bb.HoursStatistic, name string) {
 	switch h.EstimatedEODStatus {
 	case bb.EstimatedEODStatusUnavailableWeeklyHoursOver:
-		printEstimatedEndOfDayUnavailable(hoursAll.HoursActual, "You've worked %s this week, "+name)
+		printEstimatedEndOfDayUnavailable(hoursAll.HoursActual, "You've worked %s this week, "+name+"!")
 	case bb.EstimatedEODStatusUnavailableDailyHoursOver:
-		printEstimatedEndOfDayUnavailable(hoursAll.HoursActualToday, "You've worked %s today, "+name)
+		printEstimatedEndOfDayUnavailable(hoursAll.HoursActualToday, "You've worked %s today, "+name+"!")
 	case bb.EstimatedEODStatusAvailable:
 		printEstimatedEndOfDay(h.EstimatedEOD)
 	}
