@@ -24,6 +24,7 @@ type ExpectedHoursByProject struct {
 }
 
 type ExpectedHours struct {
+	Person
 	HoursConsolidated ExpectedHoursConsolidated
 	HoursByProject    map[int]ExpectedHoursByProject
 }
@@ -91,6 +92,7 @@ func (c *ForecastClient) getHoursFromAssignments(startDate time.Time, a Assignme
 	hoursByProject := getHoursByProjectFromAssignments(startDate, a, projects)
 
 	return ExpectedHours{
+		Person:            c.getCurrentPerson(),
 		HoursConsolidated: hoursConsolidated,
 		HoursByProject:    hoursByProject,
 	}

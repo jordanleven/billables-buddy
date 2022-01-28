@@ -15,6 +15,7 @@ const (
 	emojiStatusBehind         = ":x:"
 	emojiStatusOver           = ":stop_sign:"
 	emojiStatusUnknown        = ":warning:"
+	emojiEODPassed            = ":partying_face:"
 	harvestUrlWeek            = "https://sparkbox.harvestapp.com/time/week"
 	nonUserInterableMenuColor = "#626366"
 )
@@ -53,19 +54,29 @@ func printMenuTitle(s bb.Status) {
 	fmt.Println("---")
 }
 
-func maybeShowEstimatedEndOfDay(h bb.HoursRemaining) {
-	estEOD := h.EstimatedEOD
-	if estEOD.IsZero() {
-		return
+func maybeShowEstimatedEndOfDay(h bb.HoursRemaining, hoursAll bb.HoursStatistic, hoursBillable bb.HoursStatistic, name string) {
+	switch h.EstimatedEODStatus {
+	case bb.EstimatedEODStatusUnavailableWeeklyHoursOver:
+		printEstimatedEndOfDayUnavailable(hoursAll.HoursActual, "You've worked %s this week, "+name+"!")
+	case bb.EstimatedEODStatusUnavailableDailyHoursOver:
+		printEstimatedEndOfDayUnavailable(hoursAll.HoursActualToday, "You've worked %s today, "+name+"!")
+	case bb.EstimatedEODStatusAvailable:
+		printEstimatedEndOfDay(h.EstimatedEOD)
 	}
-
-	printEstimatedEndOfDay(estEOD)
 }
 
 func printEstimatedEndOfDay(estEOD time.Time) {
 	estEODF := getFormattedTime(estEOD)
 
 	fmt.Println("Est. EOD: " + estEODF + " | color=" + nonUserInterableMenuColor)
+}
+
+func printEstimatedEndOfDayUnavailable(hours float64, template string) {
+	hoursActualRoundedF, hoursActualRoundedU := getFormattedHour(hours)
+	hoursActualAbbv := getDurationAbbreviationFromUnit(hoursActualRoundedU)
+	emoji := emoji.Sprintf("%s ", emojiEODPassed)
+	message := fmt.Sprintf(template, hoursActualRoundedF+hoursActualAbbv)
+	fmt.Println(emoji + message + "| color=" + nonUserInterableMenuColor)
 }
 
 func printHoursStatistic(title string, hours bb.HoursStatistic) {
@@ -133,7 +144,7 @@ func printProjectStatistics(projects []bb.HoursProject) {
 
 func printCurrentBillables(s HoursStatistics) {
 	printMenuTitle(s.Status)
-	maybeShowEstimatedEndOfDay(s.HoursRemaining)
+	maybeShowEstimatedEndOfDay(s.HoursRemaining, s.HoursAll, s.HoursBillable, s.Person.NameFirst)
 	maybeShowCurrentHoursProgress(s.Status, s.HoursBillable)
 	printMenuSeperator()
 	printHourStatistics(s)
