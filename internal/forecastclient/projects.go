@@ -33,7 +33,7 @@ func isAssignmentTimeOff(a Assignment) bool {
 }
 
 func isProjectBillable(p forecastProjectRemainingBudget) bool {
-	return p.BudgetBy == "project"
+	return p.BudgetBy != "none"
 }
 
 func getFormattedProjects(allProjects forecastProjectsRemainingBudget, projectNames map[int]ForecastProject) Projects {

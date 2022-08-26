@@ -6,7 +6,7 @@ import (
 
 func TestIsBillableProject(t *testing.T) {
 	t.Run("Returns false when the project is not billable", func(t *testing.T) {
-		actual := isProjectBillable(forecastProjectRemainingBudget{BudgetBy: "in-house"})
+		actual := isProjectBillable(forecastProjectRemainingBudget{BudgetBy: "none"})
 		expected := false
 
 		if actual != expected {
@@ -36,7 +36,7 @@ func TestGetFormattedProjects(t *testing.T) {
 		},
 		forecastProjectRemainingBudget{
 			ProjectID: 3,
-			BudgetBy:  "in-house",
+			BudgetBy:  "none",
 		},
 	}
 
