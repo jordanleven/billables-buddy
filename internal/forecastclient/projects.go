@@ -79,7 +79,7 @@ func (c *ForecastClient) getProjectNames() map[int]ForecastProject {
 	return projectsByName
 }
 
-func (c *ForecastClient) getProjets() Projects {
+func (c *ForecastClient) getProjects() Projects {
 	allProjectsWithRemainingBudget := c.getProjectsWithRemainingBudged()
 	projectNames := c.getProjectNames()
 	return getFormattedProjects(allProjectsWithRemainingBudget, projectNames)

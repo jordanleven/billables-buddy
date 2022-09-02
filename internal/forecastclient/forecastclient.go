@@ -86,7 +86,7 @@ func getHoursByProjectFromAssignments(startDate time.Time, a Assignments, p Proj
 }
 
 func (c *ForecastClient) getHoursFromAssignments(startDate time.Time, a Assignments) ExpectedHours {
-	projects := c.getProjets()
+	projects := c.getProjects()
 	hoursConsolidated := getConsolidatedHoursFromAssignments(startDate, a, projects)
 	hoursByProject := getHoursByProjectFromAssignments(startDate, a, projects)
 

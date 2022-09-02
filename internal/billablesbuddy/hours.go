@@ -40,6 +40,13 @@ type Hours struct {
 	HoursByProject    []ProjectHours
 }
 
+type getHoursOpt struct {
+	ts             time.Time
+	todayStartTime time.Time
+	actual         hc.TimeEntry
+	expected       fc.TimeEntry
+}
+
 func getCurrentWeeklyTrackedHours(a GetHoursStatisticsArgs, startDate time.Time, endDate time.Time) hc.TrackedHours {
 	api := hc.GetHarvestAPI(a.HarvestAccountToken, a.HarvestAccountId)
 	return api.GetTrackedHoursBetweenDates(startDate, endDate)
@@ -94,12 +101,12 @@ func getExpectedHoursFromSchedule(ts time.Time, todayStartTime time.Time, schedu
 	return hoursPreviousWorkday + hoursCurrentWorkday
 }
 
-func getHours(ts time.Time, todayStartTime time.Time, actual hc.TimeEntry, expected fc.TimeEntry) Hour {
+func getHours(opts getHoursOpt) Hour {
 	return Hour{
-		ExpectedTotal:    expected.Total,
-		ExpectedSchedule: expected.Schedule,
-		Actual:           actual.Total,
-		Expected:         getExpectedHoursFromSchedule(ts, todayStartTime, expected.Schedule),
+		ExpectedTotal:    opts.expected.Total,
+		ExpectedSchedule: opts.expected.Schedule,
+		Actual:           opts.actual.Total,
+		Expected:         getExpectedHoursFromSchedule(opts.ts, opts.todayStartTime, opts.expected.Schedule),
 	}
 }
 
@@ -163,14 +170,36 @@ func getHoursConsolidated(s StatisticDates, actualHours hc.TrackedHours, expecte
 	actualHoursConsolidated := actualHours.HoursConsolidated
 
 	return HoursConsolidated{
-		HoursBillable:    getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHoursConsolidated.HoursBillable, expectedHoursConsolidated.HoursBillable),
-		HoursNonbillable: getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHoursConsolidated.HoursNonbillable, expectedHoursNonbillables),
-		HoursAll:         getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualHoursConsolidated.HoursAll, expectedHoursAll),
+		HoursBillable: getHours(
+			getHoursOpt{
+				ts:             s.CurrentTimestamp,
+				todayStartTime: actualHours.TodayStartTime,
+				actual:         actualHoursConsolidated.HoursBillable,
+				expected:       expectedHoursConsolidated.HoursBillable,
+			},
+		),
+		HoursNonbillable: getHours(
+			getHoursOpt{
+				ts:             s.CurrentTimestamp,
+				todayStartTime: actualHours.TodayStartTime,
+				actual:         actualHoursConsolidated.HoursNonbillable,
+				expected:       expectedHoursNonbillables,
+			},
+		),
+		HoursAll: getHours(
+			getHoursOpt{
+				ts:             s.CurrentTimestamp,
+				todayStartTime: actualHours.TodayStartTime,
+				actual:         actualHoursConsolidated.HoursAll,
+				expected:       expectedHoursAll,
+			},
+		),
 	}
 }
 
-func getHoursByProject(s StatisticDates, actualHours hc.TrackedHours, expectedHours fc.ExpectedHours) []ProjectHours {
-	var hoursByProject []ProjectHours
+func getHoursByProjectForecasted(s StatisticDates, actualHours hc.TrackedHours, expectedHours fc.ExpectedHours) ([]ProjectHours, []int) {
+	var hoursByProjectForecast []ProjectHours
+	var harvestIds []int
 
 	for _, assignment := range expectedHours.HoursByProject {
 		harvestID := assignment.HarvestID
@@ -178,13 +207,66 @@ func getHoursByProject(s StatisticDates, actualHours hc.TrackedHours, expectedHo
 		actualProjectHours := actualHours.HoursByProject[harvestID].Hours
 
 		project := ProjectHours{
-			Name:  assignment.ProjectName,
-			Hours: getHours(s.CurrentTimestamp, actualHours.TodayStartTime, actualProjectHours, expectedProjectHours),
+			Name: assignment.ProjectName,
+			Hours: getHours(
+				getHoursOpt{
+					ts:             s.CurrentTimestamp,
+					todayStartTime: actualHours.TodayStartTime,
+					actual:         actualProjectHours,
+					expected:       expectedProjectHours,
+				},
+			),
 		}
 
-		hoursByProject = append(hoursByProject, project)
+		hoursByProjectForecast = append(hoursByProjectForecast, project)
+		harvestIds = append(harvestIds, harvestID)
 	}
 
+	return hoursByProjectForecast, harvestIds
+}
+
+func arrayDoesContain(s []int, str int) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getHoursByProjectActual(s StatisticDates, actualHours hc.TrackedHours, harvestIds []int) []ProjectHours {
+	var hoursByProjectActual []ProjectHours
+
+	for harvestId, harvestEntry := range actualHours.HoursByProject {
+		if arrayDoesContain(harvestIds, harvestId) {
+			continue
+		}
+
+		actualProjectHours := harvestEntry.Hours
+
+		project := ProjectHours{
+			Name: harvestEntry.ProjectName,
+			Hours: getHours(
+				getHoursOpt{
+					ts:             s.CurrentTimestamp,
+					todayStartTime: actualHours.TodayStartTime,
+					actual:         actualProjectHours,
+				},
+			),
+		}
+		hoursByProjectActual = append(hoursByProjectActual, project)
+	}
+
+	return hoursByProjectActual
+}
+
+func getHoursByProject(s StatisticDates, actualHours hc.TrackedHours, expectedHours fc.ExpectedHours) []ProjectHours {
+
+	hoursByProjectForecasted, harvestIds := getHoursByProjectForecasted(s, actualHours, expectedHours)
+	hoursByProjectActual := getHoursByProjectActual(s, actualHours, harvestIds)
+
+	hoursByProject := append(hoursByProjectForecasted, hoursByProjectActual...)
 	return hoursByProject
 }
 
