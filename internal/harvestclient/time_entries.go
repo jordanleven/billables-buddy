@@ -1,6 +1,7 @@
 package harvestclient
 
 import (
+	fc "billables-buddy/internal/forecastclient"
 	"fmt"
 	"log"
 	"time"
@@ -29,11 +30,9 @@ type HarvestTimeEntriesResponse struct {
 	HarvestTimeEntries []HarvestTimeEntryResponse `json:"time_entries"`
 }
 
-type Schedule map[time.Time]float64
-
 type TimeEntry struct {
 	Total    float64
-	Schedule Schedule
+	Schedule fc.Schedule
 }
 
 type hoursEvaluator func(HarvestTimeEntryResponse) bool
@@ -59,17 +58,9 @@ func getTotalHoursFromEvaluator(t HarvestTimeEntriesResponse, evaluator hoursEva
 	return hours
 }
 
-func getScheduledHoursFromEvaluator(startDate time.Time, t HarvestTimeEntriesResponse, evaluator hoursEvaluator) Schedule {
+func getScheduledHoursFromEvaluator(startDate time.Time, t HarvestTimeEntriesResponse, evaluator hoursEvaluator) fc.Schedule {
 	loc := startDate.Location()
-	schedule := Schedule{
-		startDate.AddDate(0, 0, 0): 0.0,
-		startDate.AddDate(0, 0, 1): 0.0,
-		startDate.AddDate(0, 0, 2): 0.0,
-		startDate.AddDate(0, 0, 3): 0.0,
-		startDate.AddDate(0, 0, 4): 0.0,
-		startDate.AddDate(0, 0, 5): 0.0,
-		startDate.AddDate(0, 0, 6): 0.0,
-	}
+	schedule := fc.GetWeeklyScheduleFromStartDate(startDate)
 
 	for _, entry := range t.HarvestTimeEntries {
 		if evaluator(entry) {

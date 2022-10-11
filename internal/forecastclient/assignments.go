@@ -10,8 +10,6 @@ type Assignment = forecast.Assignment
 
 type Assignments = forecast.Assignments
 
-type Schedule map[time.Time]float64
-
 type TimeEntry struct {
 	Total    float64
 	Schedule Schedule
@@ -90,15 +88,7 @@ func getScheduleFromDates(schedule Schedule, startDate time.Time, totalDays int,
 }
 
 func getScheduledHoursFromEvaluator(startDate time.Time, a Assignments, evaluator assignmentEvaluator) Schedule {
-	schedule := Schedule{
-		startDate.AddDate(0, 0, 0): 0.0,
-		startDate.AddDate(0, 0, 1): 0.0,
-		startDate.AddDate(0, 0, 2): 0.0,
-		startDate.AddDate(0, 0, 3): 0.0,
-		startDate.AddDate(0, 0, 4): 0.0,
-		startDate.AddDate(0, 0, 5): 0.0,
-		startDate.AddDate(0, 0, 6): 0.0,
-	}
+	schedule := GetWeeklyScheduleFromStartDate(startDate)
 
 	for _, assignment := range a {
 		if !evaluator(assignment) {

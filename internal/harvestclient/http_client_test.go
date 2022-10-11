@@ -5,11 +5,11 @@ import (
 	"testing"
 )
 
-func TestToURLValues(t *testing.T) {
+func TestToUrlValues(t *testing.T) {
 	t.Run("Returns expected URL values when values are not set", func(t *testing.T) {
 		args := Arguments{}
 		expected := url.Values{}
-		actual := args.ToURLValues()
+		actual := args.ToUrlValues()
 
 		if len(actual) != 0 {
 			t.Errorf("Received %s; want %s", actual, expected)
@@ -24,7 +24,7 @@ func TestToURLValues(t *testing.T) {
 		expected := url.Values{}
 		expected.Set("foo", "bar")
 
-		actual := args.ToURLValues()
+		actual := args.ToUrlValues()
 
 		if actual.Encode() == expected.Encode() {
 			t.Errorf("Received %s; want %s", actual, expected)

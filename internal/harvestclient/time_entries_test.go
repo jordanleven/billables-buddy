@@ -1,6 +1,7 @@
 package harvestclient
 
 import (
+	fc "billables-buddy/internal/forecastclient"
 	"testing"
 	"time"
 )
@@ -109,7 +110,7 @@ func TestGetScheduledHoursFromEvaluator(t *testing.T) {
 	}
 
 	actualSchedule := getScheduledHoursFromEvaluator(startTime, args, evaluator)
-	expectedSchedule := Schedule{
+	expectedSchedule := fc.Schedule{
 		startTime.AddDate(0, 0, 0): 0.0,
 		startTime.AddDate(0, 0, 1): 6,
 		startTime.AddDate(0, 0, 2): 1.2,

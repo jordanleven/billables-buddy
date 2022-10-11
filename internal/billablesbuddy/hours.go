@@ -103,7 +103,7 @@ func getExpectedHoursFromSchedule(ts time.Time, todayStartTime time.Time, schedu
 	return hoursPreviousWorkday + hoursCurrentWorkday
 }
 
-func getActualHoursToday(ts time.Time, schedule hc.Schedule) float64 {
+func getActualHoursToday(ts time.Time, schedule fc.Schedule) float64 {
 	today := time.Date(ts.Year(), ts.Month(), ts.Day(), 0, 0, 0, 0, ts.Location())
 	return schedule[today]
 }
